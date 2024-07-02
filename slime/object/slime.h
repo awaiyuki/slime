@@ -1,20 +1,26 @@
-#ifndef PLANE_H
-#define PLANE_H
+#ifndef SLIME_H
+#define SLIME_H
 
 #include <slime/renderer/shader.h>
 #include "object.h"
 #include <vector>
+#include <memory>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <slime/simulation/sph_simulator.h>
 
 namespace slime {
-class Plane : public Object {
+struct Edge {
+  glm::vec3 p1, p2;
+};
+
+class Slime : public Object {
 
 public:
-  Plane();
-  Plane(float initX, float initY, float initZ, int planeSize);
-  ~Plane();
+  Slime();
+  Slime(float initX, float initY, float initZ);
+  ~Slime();
   void setup();
   void render();
   void clear();
@@ -22,8 +28,13 @@ public:
   void updateProjection(glm::mat4 _projection);
   void updateCameraPosition(glm::vec3 _cameraPosition);
 
+  /* Needed to implement Marching Cubes  */
+  void initMarchingCubes();
+  void march();
+
 private:
-  int planeSize;
+  std::vector<std::vector<int>> triangulation;
+  std::unique_ptr<SPHSimulator> sphSimulator;
 };
 
 } // namespace slime

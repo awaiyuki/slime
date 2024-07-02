@@ -1,9 +1,7 @@
 #include <slime/engine/engine.h>
 #include <slime/object/object.h>
-#include <slime/object/cube.h>
-#include <slime/object/cube_light.h>
-#include <slime/object/grass.h>
-#include <slime/object/ocean.h>
+#include <slime/object/plane.h>
+#include <slime/object/slime.h>
 
 int main() {
   slime::Engine engine;

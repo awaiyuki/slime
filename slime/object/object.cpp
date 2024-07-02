@@ -2,10 +2,6 @@
 
 using namespace slime;
 
-Object::Object()
-{
-}
+Object::Object() {}
 
-Object::~Object()
-{
-}
+Object::~Object() {}
