@@ -29,22 +29,22 @@ float SPHSimulator::viscosityKernel(glm::vec3 r, float h) {
 
 void SPHSimulator::updateParticles() {
     for(auto& itr : particles) {
-        computeDensity();
-        computePressure();
-        computeViscosity();
+        computeDensity(itr);
+        computePressure(itr);
+        computeViscosity(itr);
     }
 }
 
-void SPHSimulator::computeDensity() {
+void SPHSimulator::computeDensity(Particle* particle) {
+    particle->density = 0;
+}
+
+void SPHSimulator::computePressure(Particle* particle) {
 
 }
 
-void SPHSimulator::computePressure() {
-
-}
-
-void SPHSimulator::computeViscosity() {
-
+void SPHSimulator::computeViscosity(Paticle* particle) {
+    particle->
 }
 
 
@@ -61,7 +61,7 @@ void SPHSimulator::updateScalarField() {
     for(int i = 0; i < gridSize; i++) {
         for(int j = 0; j < gridSize; j++) {
             for(int k = 0; k < gridSize; k++) {
-
+                // use kernels
             }
         }
     }
