@@ -19,32 +19,42 @@ float SPHSimulator::poly6Kernel(glm::vec3 rSquare, float h) {
     
 }
 
-float SPHSimulator::pressureKernel(glm::vec3 r, float h) {
+float SPHSimulator::spikyKernel(glm::vec3 r, float h) {
 
 }
+
+float SPHSimulator::derivativeSpikyKernel(glm::vec3 r, float h) {
+
+}
+
 
 float SPHSimulator::viscosityKernel(glm::vec3 r, float h) {
     
 }
 
 void SPHSimulator::updateParticles() {
-    for(auto& itr : particles) {
-        computeDensity(itr);
-        computePressure(itr);
-        computeViscosity(itr);
+    computeDensity();
+    computePressure();
+    computeViscosity();
+}
+
+void SPHSimulator::computeDensity() {
+    for(auto& i : particles) {
+        for(auto& j : particles) {
+            i->density = j->mass * poly6Kernel(distance, radius);
+        }
     }
 }
 
-void SPHSimulator::computeDensity(Particle* particle) {
-    particle->density = 0;
+void SPHSimulator::computePressure() {
+    for(auto& i : particles) {
+        for(auto& j : particles) {
+            i->pressure = derivativeSpikyKernel(distance, radius);
+        }
+    }
 }
 
-void SPHSimulator::computePressure(Particle* particle) {
-
-}
-
-void SPHSimulator::computeViscosity(Paticle* particle) {
-    particle->
+void SPHSimulator::computeViscosity() {
 }
 
 
@@ -61,7 +71,7 @@ void SPHSimulator::updateScalarField() {
     for(int i = 0; i < gridSize; i++) {
         for(int j = 0; j < gridSize; j++) {
             for(int k = 0; k < gridSize; k++) {
-                // use kernels
+                // use kernels to interpolate attributes of particles to provide continuity
             }
         }
     }

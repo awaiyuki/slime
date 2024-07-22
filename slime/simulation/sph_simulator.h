@@ -21,7 +21,7 @@ namespace slime {
         ~SPHSimulator();
 
         float poly6Kernel(glm::vec3 rSquare, float h);
-        float pressureKernel(glm::vec3 r, float h);
+        float spikyKernel(glm::vec3 r, float h);
         float viscosityKernel(glm::vec3 r, float h);
 
         void updateParticles();
