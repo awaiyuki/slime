@@ -26,8 +26,8 @@ namespace slime {
 
         void updateParticles();
         void computeDensity();
-        void computePressure();
-        void computeViscosity();
+        void computePressureForce();
+        void computeViscosityForce();
         
         void initScalarField();
         void updateScalarField();
@@ -38,15 +38,18 @@ namespace slime {
         }
 
     private:
-        static const int numParticles = 5000;
-        static const int gridSize = 200;
+        static const int NUM_PARTICLES = 5000;
+        static const int GRID_SIZE = 200;
+        static const float GAS_CONSTANT = 100.0;
+        static const float REST_DENSITY = 1.0;    // unit scale
+        static const float VISCOSITY = 0.1f;
         std::vector<std::unique_ptr<Particle>> particles;
 
-        float densityField[gridSize][gridSize][gridSize];
-        float pressureField[gridSize][gridSize][gridSize];
-        float viscosityField[gridSize][gridSize][gridSize];
-        float colorField[gridSize][gridSize][gridSize];
-        float surfaceTensionField[gridSize][gridSize][gridSize];
+        float densityField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
+        float pressureField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
+        float viscosityField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
+        float colorField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
+        float surfaceTensionField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
     };
 }
 #endif SPH_SIMULATOR_H
