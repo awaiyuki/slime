@@ -1,14 +1,14 @@
 #include "slime.h"
 
-#include <glad/gl.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
-#include <slime/renderer/shader.h>
+#include <cstdint>
+#include <glad/gl.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <iostream>
+#include <slime/renderer/shader.h>
 #include <stb_image.h>
-#include <cstdint>
 
 using namespace slime;
 using namespace std;
@@ -26,13 +26,6 @@ Slime::Slime(float _initX, float _initY, float _initZ) {
 }
 
 Slime::~Slime() {}
-
-void Slime::setup() {
-  cout << "setup Slime" << endl;
-  this->shader = new Shader("./shaders/slime.vert", "./shaders/slime.frag");
-
-  shader->use();
-}
 
 void Slime::setup() {
   cout << "setup Slime" << endl;
@@ -56,16 +49,20 @@ void Slime::setup() {
 }
 
 void Slime::render() {
-  // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-  // cout << "render Slime" << endl;
+  cout << "render Slime" << endl;
+
+  currentTime = glfwGetTime();
+  double deltaTime = currentTime - lastTime;
+
+  lastTime = currentTime;
 
   /* SPH Simulation */
   sphSimulator->initScalarField();
-  sphSimulator->updateParticles();
+  sphSimulator->updateParticles(deltaTime);
   sphSimulator->updateScalarField();
 
   const vector<MarchingCubes::Triangle> &triangles =
-      sphSimulator->extractSurface();
+      sphSimulator->extractSurface(); // Needs to be executed on the GPU
 
   const int32_t vertexCount = 9 * triangles.size();
   unique_ptr<float[]> triangleData(new float[vertexCount]);
@@ -117,9 +114,11 @@ void Slime::render() {
 
   /* Draw */
   glBindVertexArray(VAO);
+  // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   glDrawArrays(GL_TRIANGLES, 0, vertexCount);
   // glDrawElements(GL_TRIANGLES, (slimeSize - 1) * (slimeSize - 1) * 2 * 3,
-  // GL_UNSIGNED_INT, 0); glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  //                   GL_UNSIGNED_INT, 0);
+  // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void Slime::clear() {

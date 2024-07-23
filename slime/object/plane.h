@@ -1,12 +1,12 @@
 #ifndef PLANE_H
 #define PLANE_H
 
-#include <slime/renderer/shader.h>
 #include "object.h"
-#include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <slime/renderer/shader.h>
+#include <vector>
 
 namespace slime {
 class Plane : public Object {

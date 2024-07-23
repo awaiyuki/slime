@@ -1,10 +1,11 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include <slime/renderer/shader.h>
+#include <glad/gl.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <slime/renderer/shader.h>
 
 namespace slime {
 class Object {

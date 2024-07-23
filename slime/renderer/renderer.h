@@ -1,8 +1,6 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
 #include "shader.h"
 #include "camera.h"
 #include <slime/object/object.h>
@@ -11,6 +9,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <slime/object/object.h>
+#include <vector>
 
 namespace slime {
 class Renderer {

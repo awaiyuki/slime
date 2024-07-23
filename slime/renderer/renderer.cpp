@@ -122,10 +122,10 @@ void Renderer::cursorPosEventHandler(double xpos, double ypos) {
 void Renderer::keyCallback(GLFWwindow *window, int key, int scancode,
                            int action, int mods) {
   static_cast<Renderer *>(glfwGetWindowUserPointer(window))
-      ->keyEvent(key, scancode, action, mods);
+      ->keyEventHandler(key, scancode, action, mods);
 }
 
-void Renderer::keyEvent(int key, int scancode, int action, int mods) {
+void Renderer::keyEventHandler(int key, int scancode, int action, int mods) {
   if (key == GLFW_KEY_C && action == GLFW_PRESS) {
     if (colorMode == COLOR_BLACK)
       colorMode = COLOR_WHITE;

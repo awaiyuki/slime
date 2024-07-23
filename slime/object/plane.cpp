@@ -1,12 +1,12 @@
 #include "plane.h"
 
-#include <glad/gl.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
-#include <slime/renderer/shader.h>
+#include <glad/gl.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <iostream>
+#include <slime/renderer/shader.h>
 #include <stb_image.h>
 
 using namespace slime;
