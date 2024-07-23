@@ -8,6 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <stb_image.h>
+#include <cstdint>
 
 using namespace slime;
 using namespace std;
@@ -33,9 +34,57 @@ void Slime::setup() {
   shader->use();
 }
 
+void Slime::setup() {
+  cout << "setup Slime" << endl;
+  this->shader = new Shader("./shaders/slime.vert", "./shaders/slime.frag");
+  this->sphSimulator = make_unique<SPHSimulator>();
+  shader->use();
+
+  glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+  glGenBuffers(1, &EBO);
+
+  glBindVertexArray(VAO);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+  glBufferData(GL_ARRAY_BUFFER, 1000000 * sizeof(float), nullptr,
+               GL_DYNAMIC_DRAW);
+
+  /* position attribute */
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+  glEnableVertexAttribArray(0);
+}
+
 void Slime::render() {
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   // cout << "render Slime" << endl;
+
+  /* SPH Simulation */
+  sphSimulator->initScalarField();
+  sphSimulator->updateParticles();
+  sphSimulator->updateScalarField();
+
+  const vector<MarchingCubes::Triangle> &triangles =
+      sphSimulator->extractSurface();
+
+  const int32_t vertexCount = 9 * triangles.size();
+  unique_ptr<float[]> triangleData(new float[vertexCount]);
+
+  for (uint32_t i = 0; i < triangles.size(); i++) {
+    triangleData[i] = triangles[i].v1[0];
+    triangleData[i + 1] = triangles[i].v1[1];
+    triangleData[i + 2] = triangles[i].v1[2];
+    triangleData[i + 3] = triangles[i].v2[0];
+    triangleData[i + 4] = triangles[i].v2[1];
+    triangleData[i + 5] = triangles[i].v2[2];
+    triangleData[i + 6] = triangles[i].v3[0];
+    triangleData[i + 7] = triangles[i].v3[1];
+    triangleData[i + 8] = triangles[i].v3[2];
+  }
+
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * vertexCount,
+                  triangleData.get());
 
   /* Transform */
   shader->use();
@@ -68,6 +117,7 @@ void Slime::render() {
 
   /* Draw */
   glBindVertexArray(VAO);
+  glDrawArrays(GL_TRIANGLES, 0, vertexCount);
   // glDrawElements(GL_TRIANGLES, (slimeSize - 1) * (slimeSize - 1) * 2 * 3,
   // GL_UNSIGNED_INT, 0); glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }

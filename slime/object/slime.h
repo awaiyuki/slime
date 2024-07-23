@@ -9,6 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <slime/simulation/sph_simulator.h>
+#include <slime/simulation/marching_cubes.h>
 
 namespace slime {
 struct Edge {
@@ -33,10 +34,8 @@ public:
   void march();
 
 private:
-  std::vector<std::vector<int>> triangulation;
   std::unique_ptr<SPHSimulator> sphSimulator;
 };
-
 } // namespace slime
 
-#endif
+#endif SLIME_H
