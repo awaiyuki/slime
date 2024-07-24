@@ -40,6 +40,8 @@ MarchingCubes::march(float (&scalarField)[X][Y][Z], float surfaceLevel) {
   }
 }
 
+/* TODO : Generate tables automatically */
+
 // Table values sourced from http://paulbourke.net/geometry/polygonise/
 
 const std::vector<std::vector<int8_t>> MarchingCubes::triangulation = {
