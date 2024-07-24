@@ -26,7 +26,7 @@ public:
   float viscosityKernel(glm::vec3 r, float h);
   float laplacianViscosityKernel(glm::vec3 r, float h);
 
-  void updateParticles(float deltaTime);
+  void updateParticles(double deltaTime);
   void computeDensity();
   void computePressureForce(double deltaTime);
   void computeViscosityForce(double deltaTime);
