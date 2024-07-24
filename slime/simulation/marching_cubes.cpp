@@ -22,14 +22,14 @@ MarchingCubes::march(float (&scalarField)[X][Y][Z], float surfaceLevel) {
       for (int z = 0; z < Z; z++) {
         uint8_t tableKey = 0;
         for (int i = 0; i < 8; i++) {
-          if (scalarField[x + diff[i][0]][y + diff[i][1]][z + diff[i][2]] >
+          if (scalarField[x + diff[i][0]][y + diff[i][1]][z + diff[i][2]] >=
               surfaceLevel) {
             tableKey += 1 << i;
           }
         }
-        vector<int> edges = triangulation[tableKey];
+        vector<int8_t> &edges = triangulation[tableKey];
 
-        for (int edge : edges) {
+        for (int8_t edge : edges) {
           if (edge == -1)
             continue;
 
@@ -40,7 +40,9 @@ MarchingCubes::march(float (&scalarField)[X][Y][Z], float surfaceLevel) {
   }
 }
 
-const std::vector<std::vector<int>> MarchingCubes::triangulation = {
+// Table values sourced from http://paulbourke.net/geometry/polygonise/
+
+const std::vector<std::vector<int8_t>> MarchingCubes::triangulation = {
     {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},

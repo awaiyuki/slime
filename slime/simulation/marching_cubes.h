@@ -8,7 +8,8 @@
 namespace slime {
 class MarchingCubes {
 private:
-  static const std::vector<std::vector<int>> triangulation;
+  static const std::vector<std::vector<int8_t>> triangulation;
+  static const std::vector<int16_t> edgeTable;
 
 public:
   struct Triangle {

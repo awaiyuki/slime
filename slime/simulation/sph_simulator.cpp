@@ -48,6 +48,7 @@ void SPHSimulator::updateParticles(double deltaTime) {
   computeDensity();
   computePressureForce(deltaTime);
   computeViscosityForce(deltaTime);
+  computeGravity(deltaTime);
 }
 
 void SPHSimulator::computeDensity() {
@@ -104,7 +105,7 @@ void SPHSimulator::computeViscosityForce(double deltaTime) {
   }
 }
 
-void SPHSimulator::computeGravity() {}
+void SPHSimulator::computeGravity(double deltaTime) {}
 
 void SPHSimulator::initScalarField() {
   memset(densityField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);

@@ -30,7 +30,7 @@ public:
   void computeDensity();
   void computePressureForce(double deltaTime);
   void computeViscosityForce(double deltaTime);
-  void computeGravity();
+  void computeGravity(double deltaTime);
 
   void initScalarField();
   void updateScalarField();
