@@ -1,8 +1,8 @@
 #include "slime.h"
 
+#include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <cstdint>
-#include <glad/gl.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -48,13 +48,8 @@ void Slime::setup() {
   glEnableVertexAttribArray(0);
 }
 
-void Slime::render() {
+void Slime::render(double deltaTime) {
   cout << "render Slime" << endl;
-
-  currentTime = glfwGetTime();
-  double deltaTime = currentTime - lastTime;
-
-  lastTime = currentTime;
 
   /* SPH Simulation */
   sphSimulator->initScalarField();

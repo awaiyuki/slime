@@ -1,7 +1,6 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include <glad/gl.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -13,7 +12,7 @@ public:
   Object();
   ~Object();
   virtual void setup() = 0;
-  virtual void render() = 0;
+  virtual void render(double deltaTime) = 0;
   virtual void clear() = 0;
   virtual void updateView(glm::mat4 _view) = 0;
   virtual void updateProjection(glm::mat4 _projection) = 0;

@@ -8,7 +8,7 @@ using namespace slime;
 using namespace std;
 
 SPHSimulator::SPHSimulator() {
-  for (int i = 0; i < NUM_PARTICLES; i++) {
+  for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
     particles.push_back(make_unique<Particle>());
   }
 }
@@ -59,14 +59,16 @@ void SPHSimulator::computeDensity() {
         continue;
 
       auto r = j->position - i->position;
-      i->density += j->mass * poly6Kernel(r, SMOOTHING_RADIUS);
+      i->density +=
+          j->mass * poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
     }
   }
 }
 
 void SPHSimulator::computePressureForce(double deltaTime) {
   for (auto &i : particles) {
-    i->pressure = GAS_CONSTANT * (i->density - REST_DENSITY);
+    i->pressure = SPHSimulatorConstants::GAS_CONSTANT *
+                  (i->density - SPHSimulatorConstants::REST_DENSITY);
   }
 
   for (auto &i : particles) {
@@ -76,9 +78,10 @@ void SPHSimulator::computePressureForce(double deltaTime) {
         continue;
 
       auto r = j->position - i->position;
-      pressureForce += -glm::normalize(r) * j->mass *
-                       (i->pressure + j->pressure) / (2.0f * j->density) *
-                       gradientSpikyKernel(r, SMOOTHING_RADIUS);
+      pressureForce +=
+          -glm::normalize(r) * j->mass * (i->pressure + j->pressure) /
+          (2.0f * j->density) *
+          gradientSpikyKernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
     }
     auto acceleration = pressureForce / i->mass;
     auto deltaVelocity = acceleration * float(deltaTime);
@@ -94,10 +97,11 @@ void SPHSimulator::computeViscosityForce(double deltaTime) {
         continue;
 
       auto r = j->position - i->position;
-      viscosityForce += j->mass * (j->velocity - i->velocity) / j->density *
-                        laplacianViscosityKernel(r, SMOOTHING_RADIUS);
+      viscosityForce +=
+          j->mass * (j->velocity - i->velocity) / j->density *
+          laplacianViscosityKernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
     }
-    viscosityForce *= VISCOSITY_COEFFICIENT;
+    viscosityForce *= SPHSimulatorConstants::VISCOSITY_COEFFICIENT;
 
     auto acceleration = viscosityForce / i->mass;
     auto deltaVelocity = acceleration * float(deltaTime);
@@ -124,7 +128,8 @@ void SPHSimulator::updateScalarField() {
         for (auto &j : particles) {
           glm::vec3 r = glm::vec3(x, y, z) - j->position;
           colorQuantity +=
-              j->mass * (1.0 / j->density) * poly6Kernel(r, SMOOTHING_RADIUS);
+              j->mass * (1.0 / j->density) *
+              poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
         }
         colorField[x][y][z] = colorQuantity;
       }
@@ -134,5 +139,5 @@ void SPHSimulator::updateScalarField() {
 
 std::vector<MarchingCubes::Triangle> SPHSimulator::extractSurface() {
   MarchingCubes marchingCubes;
-  return marchingCubes.march(colorField, SURFACE_LEVEL);
+  return marchingCubes.march(colorField, SPHSimulatorConstants::SURFACE_LEVEL);
 }

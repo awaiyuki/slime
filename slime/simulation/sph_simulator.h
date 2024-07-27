@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
-
+#include <slime/constants/sph_simulator_constants.h>
 namespace slime {
 
 class SPHSimulator {
@@ -38,15 +38,9 @@ public:
   std::vector<MarchingCubes::Triangle> extractSurface();
 
 private:
-  static const int NUM_PARTICLES = 5000;
-  static const int GRID_SIZE = 200;
-  static const float GAS_CONSTANT = 100.0;
-  static const float REST_DENSITY = 1.0; // unit scale
-  static const float VISCOSITY_COEFFICIENT = 0.1f;
-  static const float SMOOTHING_RADIUS = 0.1f;
-  static const float SURFACE_LEVEL = 0.5f;
   std::vector<std::unique_ptr<Particle>> particles;
 
+  static constexpr int GRID_SIZE = 200;
   float densityField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
   float pressureField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
   float viscosityField[GRID_SIZE][GRID_SIZE][GRID_SIZE];

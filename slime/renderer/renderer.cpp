@@ -90,7 +90,7 @@ void Renderer::render() {
       (*itr)->updateProjection(
           camera->projection); // Update projection transform matrix of objects
       (*itr)->updateCameraPosition(camera->position);
-      (*itr)->render();
+      (*itr)->render(deltaTime);
     }
 
     glfwSwapBuffers(window);

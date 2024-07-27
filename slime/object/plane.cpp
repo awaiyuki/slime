@@ -1,7 +1,7 @@
 #include "plane.h"
 
-#include <GLFW/glfw3.h>
 #include <glad/gl.h>
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -99,7 +99,7 @@ void Plane::setup() {
   glBindVertexArray(0);
 }
 
-void Plane::render() {
+void Plane::render(double deltaTime) {
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   // cout << "render Plane" << endl;
 

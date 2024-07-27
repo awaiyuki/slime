@@ -1,6 +1,7 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+#include <glad/gl.h>
 #include "shader.h"
 #include "camera.h"
 #include <slime/object/object.h>
