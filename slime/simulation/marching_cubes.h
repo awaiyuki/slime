@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <vector>
+#include <marching_cubes_tables.h>
 
 namespace slime {
 class MarchingCubes {
@@ -39,7 +40,8 @@ public:
               tableKey += 1 << i;
             }
           }
-          const std::vector<int8_t> &edges = triangulation[tableKey];
+          const std::vector<int8_t> &edges =
+              MarchingCubesTables::triangulation[tableKey];
 
           for (int8_t edge : edges) {
             if (edge == -1)
