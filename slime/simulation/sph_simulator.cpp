@@ -2,6 +2,7 @@
 #include "sph_simulator.h"
 #include <cstring>
 #include <random>
+#include <iostream>
 #include <glm/gtc/constants.hpp>
 #define PI 3.141592653589793238462643
 
@@ -15,7 +16,8 @@ SPHSimulator::SPHSimulator() {
 
   for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
     auto particle = make_unique<Particle>();
-    particle->position = glm::vec3(static_cast<float>(dis(gen)), dis(gen), dis(gen));
+    particle->position =
+        glm::vec3(static_cast<float>(dis(gen)), dis(gen), dis(gen));
     particles.push_back(move(particle));
   }
 }
@@ -58,8 +60,10 @@ void SPHSimulator::updateParticles(double deltaTime) {
   computeGravity(deltaTime);
 
   /* Update the positions of particles */
-  for(auto &i : particles) {
-    i->position += i->velocity * deltaTime;
+  for (auto &i : particles) {
+    cout << "update particle:" << i->position.x << i->position.y
+         << i->position.z << endl;
+    i->position += i->velocity * static_cast<float>(deltaTime);
   }
 }
 

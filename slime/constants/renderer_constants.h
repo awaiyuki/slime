@@ -1,5 +1,5 @@
-#ifndef RENDERER_CONSTANTS
-#define RENDERER_CONSTANTS
+#ifndef RENDERER_CONSTANTS_H
+#define RENDERER_CONSTANTS_H
 
 namespace slime {
 class RendererConstants {
@@ -8,4 +8,4 @@ public:
   static constexpr int window_height = 900;
 };
 } // namespace slime
-#endif RENDERER_CONSTANTS
+#endif RENDERER_CONSTANTS_H
