@@ -1,6 +1,7 @@
 
 #include "sph_simulator.h"
 #include <cstring>
+#include <random>
 #include <glm/gtc/constants.hpp>
 #define PI 3.141592653589793238462643
 
@@ -8,8 +9,14 @@ using namespace slime;
 using namespace std;
 
 SPHSimulator::SPHSimulator() {
+  random_device rd;
+  mt19937 gen(rd());
+  uniform_real_distribution<> dis(-200.0, 200.0);
+
   for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
-    particles.push_back(make_unique<Particle>());
+    auto particle = make_unique<Particle>();
+    particle->position = glm::vec3(static_cast<float>(dis(gen)), dis(gen), dis(gen));
+    particles.push_back(move(particle));
   }
 }
 
@@ -49,6 +56,11 @@ void SPHSimulator::updateParticles(double deltaTime) {
   computePressureForce(deltaTime);
   computeViscosityForce(deltaTime);
   computeGravity(deltaTime);
+
+  /* Update the positions of particles */
+  for(auto &i : particles) {
+    i->position += i->velocity * deltaTime;
+  }
 }
 
 void SPHSimulator::computeDensity() {
@@ -109,7 +121,9 @@ void SPHSimulator::computeViscosityForce(double deltaTime) {
   }
 }
 
-void SPHSimulator::computeGravity(double deltaTime) {}
+void SPHSimulator::computeGravity(double deltaTime) {
+  /* TODO: implement this. */
+}
 
 void SPHSimulator::initScalarField() {
   memset(densityField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
