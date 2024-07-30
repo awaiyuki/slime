@@ -1,5 +1,5 @@
 
-#include "sph_simulator.h"
+#include "sph_simulator.cuh"
 #include <cstring>
 #include <random>
 #include <iostream>
@@ -155,31 +155,27 @@ void SPHSimulator::initScalarField() {
          sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
 }
 
-void SPHSimulator::updateScalarField() {
+__global__ void SPHSimulator::updateScalarField() {
+  int x = threadIdx.x + blockIdx.x * blockDim.x;
+  int y = threadIdx.y + blockIdx.y * blockDim.y;
+  int z = threadIdx.z + blockIdx.z * blockDim.z;
 
-  for (int x = 0; x < GRID_SIZE; x++) {
-    for (int y = 0; y < GRID_SIZE; y++) {
-      for (int z = 0; z < GRID_SIZE; z++) {
-        float colorQuantity = 0.0f;
-        for (auto &j : particles) {
-          glm::vec3 r =
-              glm::vec3(static_cast<float>(x) / static_cast<float>(GRID_SIZE),
-                        static_cast<float>(y) / static_cast<float>(GRID_SIZE),
-                        static_cast<float>(z) / static_cast<float>(GRID_SIZE)) -
-              j->position;
-          colorQuantity +=
-              j->mass * (1.0 / j->density) *
-              poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
-          // cout << "test:"
-          //      << poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS) /
-          //             j->density
-          //      << endl;
-        }
-        // cout << "colorQuantity:" << colorQuantity << endl;
-        colorField[x][y][z] = colorQuantity;
-      }
-    }
+  float colorQuantity = 0.0f;
+  for (auto &j : particles) {
+    glm::vec3 r =
+        glm::vec3(static_cast<float>(x) / static_cast<float>(GRID_SIZE),
+                  static_cast<float>(y) / static_cast<float>(GRID_SIZE),
+                  static_cast<float>(z) / static_cast<float>(GRID_SIZE)) -
+        j->position;
+    colorQuantity += j->mass * (1.0 / j->density) *
+                     poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
+    // cout << "test:"
+    //      << poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS) /
+    //             j->density
+    //      << endl;
   }
+  // cout << "colorQuantity:" << colorQuantity << endl;
+  colorField[x][y][z] = colorQuantity;
 }
 
 std::vector<MarchingCubes::Triangle> SPHSimulator::extractSurface() {

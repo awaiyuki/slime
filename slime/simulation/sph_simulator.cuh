@@ -33,7 +33,7 @@ public:
   void computeGravity(double deltaTime);
 
   void initScalarField();
-  void updateScalarField();
+  __global__ void updateScalarField();
 
   std::vector<MarchingCubes::Triangle> extractSurface();
 
