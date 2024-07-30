@@ -55,9 +55,11 @@ void Slime::render(double deltaTime) {
   cout << "render Slime" << endl;
 
   /* SPH Simulation */
-  sphSimulator->initScalarField();
-  sphSimulator->updateParticles(deltaTime);
-  sphSimulator->updateScalarField();
+
+  /* TODO: Do kernel function call */
+  initScalarField();
+  updateParticles(deltaTime);
+  updateScalarField();
 
   const vector<MarchingCubes::Triangle> &triangles =
       sphSimulator->extractSurface();

@@ -1,19 +1,33 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.18)
 
-project(slime)
+project(slime CUDA CXX)
 
-enable_language(CUDA)
 
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
     ${CMAKE_SOURCE_DIR}/slime/*.cpp
+    ${CMAKE_SOURCE_DIR}/slime/*.cu
 )
+
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
-
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+)
+
+# CUDA
+find_package(CUDA REQUIRED)
+include_directories(${CUDA_INCLUDE_DIRS})
+set(CMAKE_CUDA_STANDARD 14)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE ${CUDA_LIBRARIES})
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    CUDA_ARCHITECTURES "61"
+)
 
 # OpenGL
 find_package(OpenGL REQUIRED)
