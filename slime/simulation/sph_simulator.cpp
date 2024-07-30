@@ -14,12 +14,17 @@ using namespace std;
 SPHSimulator::SPHSimulator() {
   random_device rd;
   mt19937 gen(rd());
-  uniform_real_distribution<> dis(-GRID_SIZE + 1, GRID_SIZE - 1);
+  uniform_real_distribution<> dis(0.0f, 1.0f);
 
   for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
     auto particle = make_unique<Particle>();
-    particle->position =
-        glm::vec3(static_cast<float>(dis(gen)), dis(gen), dis(gen));
+
+    float x = static_cast<float>(dis(gen));
+    float y = static_cast<float>(dis(gen));
+    float z = static_cast<float>(dis(gen));
+    particle->position = glm::vec3(x, y, z);
+
+    // cout << "initial position: " << x << y << z << endl;
     particle->mass = 1.0f;
     particles.push_back(move(particle));
   }
@@ -66,8 +71,8 @@ void SPHSimulator::updateParticles(double deltaTime) {
   for (auto &i : particles) {
     i->position += i->velocity * static_cast<float>(deltaTime);
     /* TODO: Keep particles within grid */
-    if (i->position.y < -static_cast<float>(GRID_SIZE)) {
-      i->position.y = -static_cast<float>(GRID_SIZE) + 0.1f;
+    if (i->position.y < 0.0f) {
+      i->position.y = 0.001f;
     }
   }
 }
@@ -135,7 +140,7 @@ void SPHSimulator::computeViscosityForce(double deltaTime) {
 
 void SPHSimulator::computeGravity(double deltaTime) {
   for (auto &i : particles) {
-    auto acceleration = glm::vec3(0, -0.000098f, 0);
+    auto acceleration = glm::vec3(0, -0.098f, 0);
     auto deltaVelocity = acceleration * float(deltaTime);
     i->velocity += deltaVelocity;
   }
@@ -157,7 +162,11 @@ void SPHSimulator::updateScalarField() {
       for (int z = 0; z < GRID_SIZE; z++) {
         float colorQuantity = 0.0f;
         for (auto &j : particles) {
-          glm::vec3 r = glm::vec3(x, y, z) - j->position;
+          glm::vec3 r =
+              glm::vec3(static_cast<float>(x) / static_cast<float>(GRID_SIZE),
+                        static_cast<float>(y) / static_cast<float>(GRID_SIZE),
+                        static_cast<float>(z) / static_cast<float>(GRID_SIZE)) -
+              j->position;
           colorQuantity +=
               j->mass * (1.0 / j->density) *
               poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);

@@ -107,4 +107,4 @@ public:
   }
 };
 } // namespace slime
-#endif MARCHING_CUBES_H
+#endif

@@ -28,7 +28,7 @@ Camera::Camera(GLFWwindow *_window, int _windowWidth, int _windowHeight)
   fovMaximum = 60.0f;
   pitchMinimum = -90.0f;
   pitchMaximum = 90.0f;
-  speedCoefficient = 2.0f;
+  speedCoefficient = 3.0f;
 
   cursorMoved = false;
 }

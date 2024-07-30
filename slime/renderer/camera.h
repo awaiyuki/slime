@@ -48,4 +48,5 @@ private:
   bool cursorMoved;
 };
 } // namespace slime
-#endif CAMERA_H
+
+#endif

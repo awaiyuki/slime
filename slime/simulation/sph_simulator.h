@@ -40,7 +40,7 @@ public:
 private:
   std::vector<std::unique_ptr<Particle>> particles;
 
-  static constexpr int GRID_SIZE = 20;
+  static constexpr int GRID_SIZE = 50;
   float densityField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
   float pressureField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
   float viscosityField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
@@ -48,4 +48,4 @@ private:
   float surfaceTensionField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
 };
 } // namespace slime
-#endif SPH_SIMULATOR_H
+#endif

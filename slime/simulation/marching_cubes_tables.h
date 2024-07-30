@@ -270,4 +270,4 @@ struct MarchingCubesTables {
       {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
 };
 } // namespace slime
-#endif MARCHING_CUBES_TABLES_H
+#endif
