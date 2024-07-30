@@ -4,7 +4,9 @@
 #include <random>
 #include <iostream>
 #include <glm/gtc/constants.hpp>
+
 #define PI 3.141592653589793238462643
+#define EPSILON 0.000001
 
 using namespace slime;
 using namespace std;
@@ -12,12 +14,13 @@ using namespace std;
 SPHSimulator::SPHSimulator() {
   random_device rd;
   mt19937 gen(rd());
-  uniform_real_distribution<> dis(-200.0, 200.0);
+  uniform_real_distribution<> dis(-GRID_SIZE + 1, GRID_SIZE - 1);
 
   for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
     auto particle = make_unique<Particle>();
     particle->position =
         glm::vec3(static_cast<float>(dis(gen)), dis(gen), dis(gen));
+    particle->mass = 1.0f;
     particles.push_back(move(particle));
   }
 }
@@ -61,9 +64,11 @@ void SPHSimulator::updateParticles(double deltaTime) {
 
   /* Update the positions of particles */
   for (auto &i : particles) {
-    cout << "update particle:" << i->position.x << i->position.y
-         << i->position.z << endl;
     i->position += i->velocity * static_cast<float>(deltaTime);
+    /* TODO: Keep particles within grid */
+    if (i->position.y < -static_cast<float>(GRID_SIZE)) {
+      i->position.y = -static_cast<float>(GRID_SIZE) + 0.1f;
+    }
   }
 }
 
@@ -77,6 +82,9 @@ void SPHSimulator::computeDensity() {
       auto r = j->position - i->position;
       i->density +=
           j->mass * poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
+    }
+    if (abs(i->density) < EPSILON) {
+      i->density = 0.000002;
     }
   }
 }
@@ -126,7 +134,11 @@ void SPHSimulator::computeViscosityForce(double deltaTime) {
 }
 
 void SPHSimulator::computeGravity(double deltaTime) {
-  /* TODO: implement this. */
+  for (auto &i : particles) {
+    auto acceleration = glm::vec3(0, -0.000098f, 0);
+    auto deltaVelocity = acceleration * float(deltaTime);
+    i->velocity += deltaVelocity;
+  }
 }
 
 void SPHSimulator::initScalarField() {
@@ -139,6 +151,7 @@ void SPHSimulator::initScalarField() {
 }
 
 void SPHSimulator::updateScalarField() {
+
   for (int x = 0; x < GRID_SIZE; x++) {
     for (int y = 0; y < GRID_SIZE; y++) {
       for (int z = 0; z < GRID_SIZE; z++) {
@@ -148,7 +161,12 @@ void SPHSimulator::updateScalarField() {
           colorQuantity +=
               j->mass * (1.0 / j->density) *
               poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
+          // cout << "test:"
+          //      << poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS) /
+          //             j->density
+          //      << endl;
         }
+        // cout << "colorQuantity:" << colorQuantity << endl;
         colorField[x][y][z] = colorQuantity;
       }
     }

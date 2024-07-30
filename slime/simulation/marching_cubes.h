@@ -1,5 +1,5 @@
-#ifndef MARCHING_CUBES
-#define MARCHING_CUBES
+#ifndef MARCHING_CUBES_H
+#define MARCHING_CUBES_H
 
 #include <cstdint>
 #include <glm/glm.hpp>
@@ -75,7 +75,6 @@ public:
           for (int i = 0; i < 16; i += 3) {
             if (edges[i] == -1)
               continue;
-
             MarchingCubes::Triangle triangle;
             triangle.v1 = interpolateVertices(
                 scalarField, surfaceLevel,
@@ -97,6 +96,9 @@ public:
                                        [edges[i + 2]][1]]);
 
             triangles.push_back(triangle);
+            // std::cout << "extract surface, triangle.v1[0]: " <<
+            // triangle.v1[0]
+            //           << std::endl;
           }
         }
       }
@@ -105,4 +107,4 @@ public:
   }
 };
 } // namespace slime
-#endif MARCHING_CUBES
+#endif MARCHING_CUBES_H
