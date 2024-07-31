@@ -55,7 +55,7 @@ public:
 
           for (int i = 0; i < 8; i++) {
             cubeVertices[i] =
-                currentPosition + glm::vec3(diff[i][0], diff[i][1], diff[i][1]);
+                currentPosition + glm::vec3(diff[i][0], diff[i][1], diff[i][2]);
             cubeVertexCoordInt[i][0] = x + diff[i][0];
             cubeVertexCoordInt[i][1] = y + diff[i][1];
             cubeVertexCoordInt[i][2] = z + diff[i][2];
@@ -88,7 +88,7 @@ public:
                     [MarchingCubesTables::cornerIndexFromEdge[edges[i + 1]][0]],
                 cubeVertexCoordInt[MarchingCubesTables::cornerIndexFromEdge
                                        [edges[i + 1]][1]]);
-            triangle.v2 = interpolateVertices(
+            triangle.v3 = interpolateVertices(
                 scalarField, surfaceLevel,
                 cubeVertexCoordInt
                     [MarchingCubesTables::cornerIndexFromEdge[edges[i + 2]][0]],

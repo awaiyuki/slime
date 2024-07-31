@@ -52,7 +52,7 @@ void Slime::setup() {
 }
 
 void Slime::render(double deltaTime) {
-  cout << "render Slime" << endl;
+  //   cout << "render Slime" << endl;
 
   /* SPH Simulation */
   sphSimulator->initScalarField();

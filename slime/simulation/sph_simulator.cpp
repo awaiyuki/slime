@@ -6,7 +6,7 @@
 #include <glm/gtc/constants.hpp>
 
 #define PI 3.141592653589793238462643
-#define EPSILON 0.000001
+#define EPSILON 0.0001
 
 using namespace slime;
 using namespace std;
@@ -14,7 +14,7 @@ using namespace std;
 SPHSimulator::SPHSimulator() {
   random_device rd;
   mt19937 gen(rd());
-  uniform_real_distribution<> dis(0.0f, 1.0f);
+  uniform_real_distribution<> dis(0.4f, 0.5f);
 
   for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
     auto particle = make_unique<Particle>();
@@ -25,7 +25,7 @@ SPHSimulator::SPHSimulator() {
     particle->position = glm::vec3(x, y, z);
 
     // cout << "initial position: " << x << y << z << endl;
-    particle->mass = 1.0f;
+    particle->mass = 0.1f;
     particles.push_back(move(particle));
   }
 }
@@ -69,17 +69,40 @@ void SPHSimulator::updateParticles(double deltaTime) {
 
   /* Update the positions of particles */
   for (auto &i : particles) {
-    i->position += i->velocity * static_cast<float>(deltaTime);
+
     /* TODO: Keep particles within grid */
-    if (i->position.y < 0.0f) {
-      i->position.y = 0.001f;
+    if (i->position.x < 0.0f) {
+      i->position.x = 0.1f;
+      i->velocity.x = -i->velocity.x;
     }
+    if (i->position.x > 1.0f) {
+      i->position.x = 0.9f;
+      i->velocity.x = -i->velocity.x;
+    }
+    if (i->position.y < 0.0f) {
+      i->position.y = 0.1f;
+      i->velocity.y = -i->velocity.y;
+    }
+    if (i->position.y > 1.0f) {
+      i->position.y = 0.9f;
+      i->velocity.y = -i->velocity.y;
+    }
+    if (i->position.z < 0.0f) {
+      i->position.z = 0.1f;
+      i->velocity.z = -i->velocity.z;
+    }
+    if (i->position.z > 1.0f) {
+      i->position.z = 0.9f;
+      i->velocity.z = -i->velocity.z;
+    }
+
+    i->position += i->velocity * static_cast<float>(deltaTime);
   }
 }
 
 void SPHSimulator::computeDensity() {
   for (auto &i : particles) {
-    i->density = 0;
+    i->density = 0.0f;
     for (auto &j : particles) {
       if (i == j)
         continue;
@@ -88,8 +111,8 @@ void SPHSimulator::computeDensity() {
       i->density +=
           j->mass * poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
     }
-    if (abs(i->density) < EPSILON) {
-      i->density = 0.000002;
+    if (i->density < EPSILON) {
+      i->density = 2 * EPSILON;
     }
   }
 }
@@ -104,6 +127,9 @@ void SPHSimulator::computePressureForce(double deltaTime) {
     glm::vec3 pressureForce = glm::vec3(0.0f, 0.0f, 0.0f);
     for (auto &j : particles) {
       if (i == j)
+        continue;
+
+      if (j->density < EPSILON)
         continue;
 
       auto r = j->position - i->position;
@@ -123,6 +149,9 @@ void SPHSimulator::computeViscosityForce(double deltaTime) {
     glm::vec3 viscosityForce = glm::vec3(0.0f, 0.0f, 0.0f);
     for (auto &j : particles) {
       if (i == j)
+        continue;
+
+      if (j->density < EPSILON)
         continue;
 
       auto r = j->position - i->position;
@@ -162,11 +191,16 @@ void SPHSimulator::updateScalarField() {
       for (int z = 0; z < GRID_SIZE; z++) {
         float colorQuantity = 0.0f;
         for (auto &j : particles) {
+
+          if (j->density < EPSILON)
+            continue;
+
           glm::vec3 r =
               glm::vec3(static_cast<float>(x) / static_cast<float>(GRID_SIZE),
                         static_cast<float>(y) / static_cast<float>(GRID_SIZE),
                         static_cast<float>(z) / static_cast<float>(GRID_SIZE)) -
               j->position;
+          //   cout << j->density << endl;
           colorQuantity +=
               j->mass * (1.0 / j->density) *
               poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
