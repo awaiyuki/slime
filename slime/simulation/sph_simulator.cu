@@ -6,7 +6,7 @@
 #include <glm/gtc/constants.hpp>
 
 #define PI 3.141592653589793238462643
-#define EPSILON 0.000001
+#define EPSILON 0.0001
 
 using namespace slime;
 using namespace std;
@@ -14,7 +14,7 @@ using namespace std;
 SPHSimulator::SPHSimulator() {
   random_device rd;
   mt19937 gen(rd());
-  uniform_real_distribution<> dis(0.0f, 1.0f);
+  uniform_real_distribution<> dis(0.4f, 0.5f);
 
   for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
     Particle particle;
@@ -72,7 +72,7 @@ __device__ float SPHSimulator::laplacianViscosityKernel(glm::vec3 r, float h) {
 
 __device__ void SPHSimulator::computeDensity() {
   for (auto &i : particles) {
-    i->density = 0;
+    i->density = 0.0f;
     for (auto &j : particles) {
       if (i == j)
         continue;
@@ -81,8 +81,8 @@ __device__ void SPHSimulator::computeDensity() {
       i->density +=
           j->mass * poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
     }
-    if (abs(i->density) < EPSILON) {
-      i->density = 0.000002;
+    if (i->density < EPSILON) {
+      i->density = 2 * EPSILON;
     }
   }
 }
@@ -97,6 +97,9 @@ __device__ void SPHSimulator::computePressureForce(double deltaTime) {
     glm::vec3 pressureForce = glm::vec3(0.0f, 0.0f, 0.0f);
     for (auto &j : particles) {
       if (i == j)
+        continue;
+
+      if (j->density < EPSILON)
         continue;
 
       auto r = j->position - i->position;
@@ -116,6 +119,9 @@ __device__ void SPHSimulator::computeViscosityForce(double deltaTime) {
     glm::vec3 viscosityForce = glm::vec3(0.0f, 0.0f, 0.0f);
     for (auto &j : particles) {
       if (i == j)
+        continue;
+
+      if (j->density < EPSILON)
         continue;
 
       auto r = j->position - i->position;
