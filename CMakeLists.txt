@@ -1,13 +1,9 @@
 cmake_minimum_required(VERSION 3.18)
-
-project(slime CUDA CXX)
-
-
+project(slime LANGUAGES CXX CUDA)
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
     ${CMAKE_SOURCE_DIR}/slime/*.cpp
     ${CMAKE_SOURCE_DIR}/slime/*.cu
 )
-
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 

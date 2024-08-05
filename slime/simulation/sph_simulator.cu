@@ -11,48 +11,104 @@
 using namespace slime;
 using namespace std;
 
+__device__ float poly6KernelDevice(glm::vec3 r, float h) {
+  float rMagnitude = glm::length(r);
+  if (rMagnitude > h)
+    return 0.0f;
+
+  return 315.0f / (64.0f * PI * glm::pow(h, 9)) *
+         glm::pow(h * h - rMagnitude * rMagnitude, 3);
+}
+
+__global__ void updateScalarFieldDevice(float *colorFieldDevice,
+                                        Particle *particlesDevice,
+                                        int gridSize) {
+  int x = threadIdx.x + blockIdx.x * blockDim.x;
+  int y = threadIdx.y + blockIdx.y * blockDim.y;
+  int z = threadIdx.z + blockIdx.z * blockDim.z;
+
+  float colorQuantity = 0.0f;
+  for (int j = 0; j < SPHSimulatorConstants::NUM_PARTICLES; j++) {
+    glm::vec3 r =
+        glm::vec3(static_cast<float>(x) / static_cast<float>(gridSize),
+                  static_cast<float>(y) / static_cast<float>(gridSize),
+                  static_cast<float>(z) / static_cast<float>(gridSize)) -
+        particlesDevice[j].position;
+    colorQuantity +=
+        particlesDevice[j].mass * (1.0 / particlesDevice[j].density) *
+        poly6KernelDevice(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
+    // cout << "test:"
+    //      << poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS) /
+    //             j->density
+    //      << endl;
+  }
+  // cout << "colorQuantity:" << colorQuantity << endl;
+  colorFieldDevice[x * gridSize * gridSize + y * gridSize + z] = colorQuantity;
+}
+
 SPHSimulator::SPHSimulator() {
   random_device rd;
   mt19937 gen(rd());
   uniform_real_distribution<> dis(0.4f, 0.5f);
 
   for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
-    Particle particle;
+    Particle *particle = new Particle();
 
     float x = static_cast<float>(dis(gen));
     float y = static_cast<float>(dis(gen));
     float z = static_cast<float>(dis(gen));
-    particle.position = glm::vec3(x, y, z);
+    particle->position = glm::vec3(x, y, z);
 
     // cout << "initial position: " << x << y << z << endl;
-    particle.mass = 1.0f;
+    particle->mass = 1.0f;
     particles.push_back(particle);
   }
+
+  cudaMemcpy(particlesDevice, particles.data(),
+             sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE,
+             cudaMemcpyHostToDevice);
 }
 
 SPHSimulator::~SPHSimulator() {}
 
-__device__ float SPHSimulator::poly6Kernel(glm::vec3 r, float h) {
-  float rMagnitude = glm::length(r);
-  if (rMagnitude > h)
-    return 0.0f;
+void SPHSimulator::updateParticles(double deltaTime) {
+  computeDensity();
+  computePressureForce(deltaTime);
+  computeViscosityForce(deltaTime);
+  computeGravity(deltaTime);
 
-  return 315.0f / (64.0f * PI * glm::pow(h, 9)) *
-         glm::pow(h * h - rMagnitude * rMagnitude, 3);
+  /* Update the positions of particles */
+  for (auto &i : particles) {
+    i->position += i->velocity * static_cast<float>(deltaTime);
+    /* TODO: Keep particles within grid */
+    if (i->position.y < 0.0f) {
+      i->position.y = 0.001f;
+    }
+  }
 }
 
-__device__ float SPHSimulator::poly6KernelDevice(glm::vec3 r, float h) {
-  float rMagnitude = glm::length(r);
-  if (rMagnitude > h)
-    return 0.0f;
+void SPHSimulator::initScalarField() {
+  memset(colorField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
+  cudaMalloc((void **)&colorFieldDevice,
+             sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
 
-  return 315.0f / (64.0f * PI * glm::pow(h, 9)) *
-         glm::pow(h * h - rMagnitude * rMagnitude, 3);
+  // memset(densityField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
+  // memset(pressureField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE *
+  // GRID_SIZE); memset(viscosityField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE
+  // * GRID_SIZE); memset(surfaceTensionField, 0,
+  //  sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
 }
 
-__device__ float SPHSimulator::spikyKernel(glm::vec3 r, float h) {}
+void SPHSimulator::updateScalarField() {
+  dim3 dimBlock(GRID_SIZE, GRID_SIZE, GRID_SIZE);
+  dim3 dimGrid(1, 1, 1);
+  updateScalarFieldDevice<<<dimBlock, dimGrid>>>(colorFieldDevice,
+                                                 particlesDevice, GRID_SIZE);
+}
 
-__device__ float SPHSimulator::gradientSpikyKernel(glm::vec3 r, float h) {
+float SPHSimulator::spikyKernel(glm::vec3 r, float h) {}
+
+float SPHSimulator::gradientSpikyKernel(glm::vec3 r, float h) {
   float rMagnitude = glm::length(r);
   if (rMagnitude > h)
     return 0.0f;
@@ -60,9 +116,9 @@ __device__ float SPHSimulator::gradientSpikyKernel(glm::vec3 r, float h) {
   return -45.0f / (PI * glm::pow(h, 6)) * glm::pow(h - rMagnitude, 2);
 }
 
-__device__ float SPHSimulator::viscosityKernel(glm::vec3 r, float h) {}
+float SPHSimulator::viscosityKernel(glm::vec3 r, float h) {}
 
-__device__ float SPHSimulator::laplacianViscosityKernel(glm::vec3 r, float h) {
+float SPHSimulator::laplacianViscosityKernel(glm::vec3 r, float h) {
   float rMagnitude = glm::length(r);
   if (rMagnitude > h)
     return 0.0f;
@@ -70,7 +126,7 @@ __device__ float SPHSimulator::laplacianViscosityKernel(glm::vec3 r, float h) {
   return 45 / (PI * glm::pow(h, 6)) * (h - rMagnitude);
 }
 
-__device__ void SPHSimulator::computeDensity() {
+void SPHSimulator::computeDensity() {
   for (auto &i : particles) {
     i->density = 0.0f;
     for (auto &j : particles) {
@@ -87,7 +143,7 @@ __device__ void SPHSimulator::computeDensity() {
   }
 }
 
-__device__ void SPHSimulator::computePressureForce(double deltaTime) {
+void SPHSimulator::computePressureForce(double deltaTime) {
   for (auto &i : particles) {
     i->pressure = SPHSimulatorConstants::GAS_CONSTANT *
                   (i->density - SPHSimulatorConstants::REST_DENSITY);
@@ -114,7 +170,7 @@ __device__ void SPHSimulator::computePressureForce(double deltaTime) {
   }
 }
 
-__device__ void SPHSimulator::computeViscosityForce(double deltaTime) {
+void SPHSimulator::computeViscosityForce(double deltaTime) {
   for (auto &i : particles) {
     glm::vec3 viscosityForce = glm::vec3(0.0f, 0.0f, 0.0f);
     for (auto &j : particles) {
@@ -137,7 +193,7 @@ __device__ void SPHSimulator::computeViscosityForce(double deltaTime) {
   }
 }
 
-__device__ void SPHSimulator::computeGravity(double deltaTime) {
+void SPHSimulator::computeGravity(double deltaTime) {
   for (auto &i : particles) {
     auto acceleration = glm::vec3(0, -0.098f, 0);
     auto deltaVelocity = acceleration * float(deltaTime);
@@ -148,56 +204,4 @@ __device__ void SPHSimulator::computeGravity(double deltaTime) {
 std::vector<MarchingCubes::Triangle> SPHSimulator::extractSurface() {
   MarchingCubes marchingCubes;
   return marchingCubes.march(colorField, SPHSimulatorConstants::SURFACE_LEVEL);
-}
-
-__global__ void updateParticles(Particle *particles, int particleCount,
-                                double deltaTime) {
-  computeDensity();
-  computePressureForce(deltaTime);
-  computeViscosityForce(deltaTime);
-  computeGravity(deltaTime);
-
-  /* Update the positions of particles */
-  for (auto &i : particles) {
-    i->position += i->velocity * static_cast<float>(deltaTime);
-    /* TODO: Keep particles within grid */
-    if (i->position.y < 0.0f) {
-      i->position.y = 0.001f;
-    }
-  }
-}
-
-__global__ void SPHSimulator::initScalarField(int gridSize) {
-  memset(densityField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
-  memset(pressureField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
-  memset(viscosityField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
-  memset(colorField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
-  memset(surfaceTensionField, 0,
-         sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
-}
-
-__global__ void SPHSimulator::updateScalarField(Particle *particles,
-                                                int particleCount,
-                                                int gridSize) {
-  int x = threadIdx.x + blockIdx.x * blockDim.x;
-  int y = threadIdx.y + blockIdx.y * blockDim.y;
-  int z = threadIdx.z + blockIdx.z * blockDim.z;
-
-  float colorQuantity = 0.0f;
-  for (auto &j : particles) {
-    glm::vec3 r =
-        glm::vec3(static_cast<float>(x) / static_cast<float>(GRID_SIZE),
-                  static_cast<float>(y) / static_cast<float>(GRID_SIZE),
-                  static_cast<float>(z) / static_cast<float>(GRID_SIZE)) -
-        j->position;
-    colorQuantity +=
-        j->mass * (1.0 / j->density) *
-        poly6KernelDevice(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
-    // cout << "test:"
-    //      << poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS) /
-    //             j->density
-    //      << endl;
-  }
-  // cout << "colorQuantity:" << colorQuantity << endl;
-  colorField[x][y][z] = colorQuantity;
 }
