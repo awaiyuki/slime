@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.18)
-project(slime LANGUAGES CXX CUDA)
+project(slime CXX CUDA)
+
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
+    ${CMAKE_SOURCE_DIR}/slime/*.h
+    ${CMAKE_SOURCE_DIR}/slime/*.cuh
     ${CMAKE_SOURCE_DIR}/slime/*.cpp
     ${CMAKE_SOURCE_DIR}/slime/*.cu
 )
@@ -16,14 +19,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 # CUDA
-find_package(CUDA REQUIRED)
-include_directories(${CUDA_INCLUDE_DIRS})
-set(CMAKE_CUDA_STANDARD 14)
-
-target_link_libraries(${PROJECT_NAME} PRIVATE ${CUDA_LIBRARIES})
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    CUDA_ARCHITECTURES "61"
-)
+                            CUDA_SEPARABLE_COMPILATION ON)
 
 # OpenGL
 find_package(OpenGL REQUIRED)

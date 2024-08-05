@@ -39,7 +39,7 @@ __global__ void updateScalarFieldDevice(float *colorFieldDevice,
         poly6KernelDevice(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
     // cout << "test:"
     //      << poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS) /
-    //             j->density
+    //             j.density
     //      << endl;
   }
   // cout << "colorQuantity:" << colorQuantity << endl;
@@ -52,15 +52,16 @@ SPHSimulator::SPHSimulator() {
   uniform_real_distribution<> dis(0.4f, 0.5f);
 
   for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
-    Particle *particle = new Particle();
+    Particle particle;
+    particle.id = i;
 
     float x = static_cast<float>(dis(gen));
     float y = static_cast<float>(dis(gen));
     float z = static_cast<float>(dis(gen));
-    particle->position = glm::vec3(x, y, z);
+    particle.position = glm::vec3(x, y, z);
 
     // cout << "initial position: " << x << y << z << endl;
-    particle->mass = 1.0f;
+    particle.mass = 1.0f;
     particles.push_back(particle);
   }
 
@@ -79,10 +80,10 @@ void SPHSimulator::updateParticles(double deltaTime) {
 
   /* Update the positions of particles */
   for (auto &i : particles) {
-    i->position += i->velocity * static_cast<float>(deltaTime);
+    i.position += i.velocity * static_cast<float>(deltaTime);
     /* TODO: Keep particles within grid */
-    if (i->position.y < 0.0f) {
-      i->position.y = 0.001f;
+    if (i.position.y < 0.0f) {
+      i.position.y = 0.001f;
     }
   }
 }
@@ -104,6 +105,10 @@ void SPHSimulator::updateScalarField() {
   dim3 dimGrid(1, 1, 1);
   updateScalarFieldDevice<<<dimBlock, dimGrid>>>(colorFieldDevice,
                                                  particlesDevice, GRID_SIZE);
+  cudaDeviceSynchronize();
+  cudaMemcpy(colorFieldDevice, colorField,
+      sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE,
+      cudaMemcpyDeviceToHost);
 }
 
 float SPHSimulator::spikyKernel(glm::vec3 r, float h) {}
@@ -128,25 +133,25 @@ float SPHSimulator::laplacianViscosityKernel(glm::vec3 r, float h) {
 
 void SPHSimulator::computeDensity() {
   for (auto &i : particles) {
-    i->density = 0.0f;
+    i.density = 0.0f;
     for (auto &j : particles) {
       if (i == j)
         continue;
 
-      auto r = j->position - i->position;
-      i->density +=
-          j->mass * poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
+      auto r = j.position - i.position;
+      i.density +=
+          j.mass * poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
     }
-    if (i->density < EPSILON) {
-      i->density = 2 * EPSILON;
+    if (i.density < EPSILON) {
+      i.density = 2 * EPSILON;
     }
   }
 }
 
 void SPHSimulator::computePressureForce(double deltaTime) {
   for (auto &i : particles) {
-    i->pressure = SPHSimulatorConstants::GAS_CONSTANT *
-                  (i->density - SPHSimulatorConstants::REST_DENSITY);
+    i.pressure = SPHSimulatorConstants::GAS_CONSTANT *
+                  (i.density - SPHSimulatorConstants::REST_DENSITY);
   }
 
   for (auto &i : particles) {
@@ -155,18 +160,18 @@ void SPHSimulator::computePressureForce(double deltaTime) {
       if (i == j)
         continue;
 
-      if (j->density < EPSILON)
+      if (j.density < EPSILON)
         continue;
 
-      auto r = j->position - i->position;
+      auto r = j.position - i.position;
       pressureForce +=
-          -glm::normalize(r) * j->mass * (i->pressure + j->pressure) /
-          (2.0f * j->density) *
+          -glm::normalize(r) * j.mass * (i.pressure + j.pressure) /
+          (2.0f * j.density) *
           gradientSpikyKernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
     }
-    auto acceleration = pressureForce / i->mass;
+    auto acceleration = pressureForce / i.mass;
     auto deltaVelocity = acceleration * float(deltaTime);
-    i->velocity += deltaVelocity;
+    i.velocity += deltaVelocity;
   }
 }
 
@@ -177,19 +182,19 @@ void SPHSimulator::computeViscosityForce(double deltaTime) {
       if (i == j)
         continue;
 
-      if (j->density < EPSILON)
+      if (j.density < EPSILON)
         continue;
 
-      auto r = j->position - i->position;
+      auto r = j.position - i.position;
       viscosityForce +=
-          j->mass * (j->velocity - i->velocity) / j->density *
+          j.mass * (j.velocity - i.velocity) / j.density *
           laplacianViscosityKernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
     }
     viscosityForce *= SPHSimulatorConstants::VISCOSITY_COEFFICIENT;
 
-    auto acceleration = viscosityForce / i->mass;
+    auto acceleration = viscosityForce / i.mass;
     auto deltaVelocity = acceleration * float(deltaTime);
-    i->velocity += deltaVelocity;
+    i.velocity += deltaVelocity;
   }
 }
 
@@ -197,7 +202,7 @@ void SPHSimulator::computeGravity(double deltaTime) {
   for (auto &i : particles) {
     auto acceleration = glm::vec3(0, -0.098f, 0);
     auto deltaVelocity = acceleration * float(deltaTime);
-    i->velocity += deltaVelocity;
+    i.velocity += deltaVelocity;
   }
 }
 

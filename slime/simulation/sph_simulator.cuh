@@ -9,10 +9,15 @@
 namespace slime {
 
 struct Particle {
+  int id;
   glm::vec3 position, velocity, acceleration;
   float density, pressure, mass;
   glm::vec4 color;
   float life;
+
+  __host__ __device__ bool operator==(const Particle& p) {
+      return this->id == p.id;
+  }
 };
 
 __global__ void updateScalarFieldDevice(float *colorFieldDevice,
@@ -43,7 +48,7 @@ public:
   std::vector<MarchingCubes::Triangle> extractSurface();
 
 private:
-  std::vector<Particle *> particles;
+  std::vector<Particle> particles;
   Particle *particlesDevice;
 
   static constexpr int GRID_SIZE = 200;
