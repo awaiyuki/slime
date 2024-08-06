@@ -2,6 +2,7 @@
 #define MARCHING_CUBES_H
 
 #include <cstdint>
+#define GLM_FORCE_CUDA
 #include <glm/glm.hpp>
 #include "marching_cubes_tables.h"
 #include <algorithm>

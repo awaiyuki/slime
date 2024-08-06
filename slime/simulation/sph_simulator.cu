@@ -48,7 +48,7 @@ __global__ void updateScalarFieldDevice(float *colorFieldDevice,
 SPHSimulator::SPHSimulator() {
   random_device rd;
   mt19937 gen(rd());
-  uniform_real_distribution<> dis(0.4f, 0.5f);
+  uniform_real_distribution<> dis(0.3f, 0.6f);
 
   for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
     Particle particle;
@@ -76,7 +76,10 @@ SPHSimulator::SPHSimulator() {
              cudaMemcpyHostToDevice);
 }
 
-SPHSimulator::~SPHSimulator() {}
+SPHSimulator::~SPHSimulator() {
+  cudaFree(particlesDevice);
+  cudaFree(colorFieldDevice);
+}
 
 void SPHSimulator::updateParticles(double deltaTime) {
   computeDensity();
