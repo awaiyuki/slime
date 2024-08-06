@@ -63,7 +63,7 @@ public:
 
           uint8_t tableKey = 0;
           for (int i = 0; i < 8; i++) {
-            if (scalarField[x + diff[i][0]][y + diff[i][1]][z + diff[i][2]] >=
+            if (scalarField[x + diff[i][0]][y + diff[i][1]][z + diff[i][2]] <
                 surfaceLevel) { // correct?
               tableKey |= 1 << i;
             }

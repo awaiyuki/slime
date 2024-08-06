@@ -6,7 +6,7 @@
 #include <glm/gtc/constants.hpp>
 
 #define PI 3.141592653589793238462643
-#define EPSILON 0.0001
+#define EPSILON 0.000001
 
 using namespace slime;
 using namespace std;
@@ -14,7 +14,7 @@ using namespace std;
 SPHSimulator::SPHSimulator() {
   random_device rd;
   mt19937 gen(rd());
-  uniform_real_distribution<> dis(0.4f, 0.5f);
+  uniform_real_distribution<> dis(-0.2f, 0.2f);
 
   for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
     auto particle = make_unique<Particle>();
@@ -23,6 +23,7 @@ SPHSimulator::SPHSimulator() {
     float y = static_cast<float>(dis(gen));
     float z = static_cast<float>(dis(gen));
     particle->position = glm::vec3(x, y, z);
+    particle->velocity = glm::vec3(0, 0, 0);
 
     // cout << "initial position: " << x << y << z << endl;
     particle->mass = 0.1f;
@@ -36,9 +37,10 @@ float SPHSimulator::poly6Kernel(glm::vec3 r, float h) {
   float rMagnitude = glm::length(r);
   if (rMagnitude > h)
     return 0.0f;
-
-  return 315.0f / (64.0f * PI * glm::pow(h, 9)) *
-         glm::pow(h * h - rMagnitude * rMagnitude, 3);
+  float result = 315.0f / (64.0f * PI * glm::pow(h, 9)) *
+                 glm::pow(h * h - rMagnitude * rMagnitude, 3);
+  // cout << "poly6Kernel:" << result << endl;
+  return result;
 }
 
 float SPHSimulator::spikyKernel(glm::vec3 r, float h) {}
@@ -66,36 +68,10 @@ void SPHSimulator::updateParticles(double deltaTime) {
   computePressureForce(deltaTime);
   computeViscosityForce(deltaTime);
   computeGravity(deltaTime);
+  computeWallConstraint(deltaTime);
 
   /* Update the positions of particles */
   for (auto &i : particles) {
-
-    /* TODO: Keep particles within grid */
-    if (i->position.x < 0.0f) {
-      i->position.x = 0.1f;
-      i->velocity.x = -i->velocity.x;
-    }
-    if (i->position.x > 1.0f) {
-      i->position.x = 0.9f;
-      i->velocity.x = -i->velocity.x;
-    }
-    if (i->position.y < 0.0f) {
-      i->position.y = 0.1f;
-      i->velocity.y = -i->velocity.y;
-    }
-    if (i->position.y > 1.0f) {
-      i->position.y = 0.9f;
-      i->velocity.y = -i->velocity.y;
-    }
-    if (i->position.z < 0.0f) {
-      i->position.z = 0.1f;
-      i->velocity.z = -i->velocity.z;
-    }
-    if (i->position.z > 1.0f) {
-      i->position.z = 0.9f;
-      i->velocity.z = -i->velocity.z;
-    }
-
     i->position += i->velocity * static_cast<float>(deltaTime);
   }
 }
@@ -110,9 +86,6 @@ void SPHSimulator::computeDensity() {
       auto r = j->position - i->position;
       i->density +=
           j->mass * poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
-    }
-    if (i->density < EPSILON) {
-      i->density = 2 * EPSILON;
     }
   }
 }
@@ -138,6 +111,8 @@ void SPHSimulator::computePressureForce(double deltaTime) {
           (2.0f * j->density) *
           gradientSpikyKernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
     }
+    // cout << pressureForce[0] << ' ' << pressureForce[1] << ' '
+    //      << pressureForce[2] << endl;
     auto acceleration = pressureForce / i->mass;
     auto deltaVelocity = acceleration * float(deltaTime);
     i->velocity += deltaVelocity;
@@ -169,12 +144,65 @@ void SPHSimulator::computeViscosityForce(double deltaTime) {
 
 void SPHSimulator::computeGravity(double deltaTime) {
   for (auto &i : particles) {
-    auto acceleration = glm::vec3(0, -0.098f, 0);
+    auto acceleration = glm::vec3(0, -0.98f, 0);
     auto deltaVelocity = acceleration * float(deltaTime);
     i->velocity += deltaVelocity;
   }
 }
 
+void SPHSimulator::computeWallConstraint(double deltaTime) {
+  for (auto &i : particles) {
+    const float FLOOR_CONSTRAINT = -2.0f;
+    const float CEILING_CONSTRAINT = 2.0f;
+    const float SPRING_CONSTANT = 500.0f;
+    const float DAMPING = 1.0f;
+    if (i->position.x < FLOOR_CONSTRAINT) {
+      auto deltaVelocity =
+          (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i->position.x) +
+           DAMPING * i->velocity.x) *
+          float(deltaTime);
+      i->velocity.x += deltaVelocity;
+    }
+
+    if (i->position.x > CEILING_CONSTRAINT) {
+      auto deltaVelocity =
+          (SPRING_CONSTANT * (i->position.x - CEILING_CONSTRAINT) +
+           DAMPING * i->velocity.x) *
+          float(deltaTime);
+      i->velocity.x -= deltaVelocity;
+    }
+    if (i->position.y < FLOOR_CONSTRAINT) {
+      auto deltaVelocity =
+          (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i->position.y) +
+           DAMPING * i->velocity.y) *
+          float(deltaTime);
+      i->velocity.y += deltaVelocity;
+    }
+
+    if (i->position.y > CEILING_CONSTRAINT) {
+      auto deltaVelocity =
+          (SPRING_CONSTANT * (i->position.y - CEILING_CONSTRAINT) +
+           DAMPING * i->velocity.y) *
+          float(deltaTime);
+      i->velocity.y -= deltaVelocity;
+    }
+    if (i->position.z < FLOOR_CONSTRAINT) {
+      auto deltaVelocity =
+          (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i->position.z) +
+           DAMPING * i->velocity.z) *
+          float(deltaTime);
+      i->velocity.z += deltaVelocity;
+    }
+
+    if (i->position.z > CEILING_CONSTRAINT) {
+      auto deltaVelocity =
+          (SPRING_CONSTANT * (i->position.z - CEILING_CONSTRAINT) +
+           DAMPING * i->velocity.z) *
+          float(deltaTime);
+      i->velocity.z -= deltaVelocity;
+    }
+  }
+}
 void SPHSimulator::initScalarField() {
   memset(densityField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
   memset(pressureField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);

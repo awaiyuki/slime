@@ -14,7 +14,6 @@ uniform float time;
 void main()
 {
     FragPos = vec3(model * vec4(aPos, 1.0));
-    FragPos.y += 1.*sin(FragPos.z + time);
     // Normal = normalMatrix * aNormal;
     Normal = vec3(0.0, 1.0, 0.0);
     gl_Position = projection * view * vec4(FragPos, 1.0);

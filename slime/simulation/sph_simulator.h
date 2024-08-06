@@ -21,7 +21,7 @@ public:
   SPHSimulator();
   ~SPHSimulator();
 
-  float poly6Kernel(glm::vec3 rSquare, float h);
+  float poly6Kernel(glm::vec3 r, float h);
   float spikyKernel(glm::vec3 r, float h);
   float gradientSpikyKernel(glm::vec3 r, float h);
   float viscosityKernel(glm::vec3 r, float h);
@@ -32,6 +32,7 @@ public:
   void computePressureForce(double deltaTime);
   void computeViscosityForce(double deltaTime);
   void computeGravity(double deltaTime);
+  void computeWallConstraint(double deltaTime);
 
   void initScalarField();
   void updateScalarField();
@@ -42,7 +43,7 @@ public:
 private:
   std::vector<std::unique_ptr<Particle>> particles;
 
-  static constexpr int GRID_SIZE = 30;
+  static constexpr int GRID_SIZE = 20;
   float densityField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
   float pressureField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
   float viscosityField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
