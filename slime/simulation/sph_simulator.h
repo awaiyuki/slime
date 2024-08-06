@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <slime/constants/sph_simulator_constants.h>
+
 namespace slime {
 
 class SPHSimulator {
@@ -36,6 +37,7 @@ public:
   void updateScalarField();
 
   std::vector<MarchingCubes::Triangle> extractSurface();
+  std::vector<glm::vec3> extractParticlePositions();
 
 private:
   std::vector<std::unique_ptr<Particle>> particles;

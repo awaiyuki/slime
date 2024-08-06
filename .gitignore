@@ -1,4 +1,5 @@
 build/
+.vs/
 .vscode/
 .DS_Store
 slime/resources/*.png

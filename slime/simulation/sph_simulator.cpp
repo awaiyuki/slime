@@ -220,3 +220,11 @@ std::vector<MarchingCubes::Triangle> SPHSimulator::extractSurface() {
   MarchingCubes marchingCubes;
   return marchingCubes.march(colorField, SPHSimulatorConstants::SURFACE_LEVEL);
 }
+
+std::vector<glm::vec3> SPHSimulator::extractParticlePositions() {
+  vector<glm::vec3> positions;
+  for (auto &i : particles) {
+    positions.push_back(i->position);
+  }
+  return positions;
+}
