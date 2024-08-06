@@ -26,6 +26,9 @@ __global__ void updateScalarFieldDevice(float *colorFieldDevice,
   int y = threadIdx.y + blockIdx.y * blockDim.y;
   int z = threadIdx.z + blockIdx.z * blockDim.z;
 
+  if (x >= gridSize || y >= gridSize || z >= gridSize)
+    return;
+
   float colorQuantity = 0.0f;
   for (int j = 0; j < SPHSimulatorConstants::NUM_PARTICLES; j++) {
     glm::vec3 r =
@@ -103,7 +106,7 @@ void SPHSimulator::updateParticles(double deltaTime) {
 
 void SPHSimulator::updateScalarField() {
   dim3 dimBlock(GRID_SIZE, GRID_SIZE, GRID_SIZE);
-  dim3 dimGrid(1, 1, 1);
+  dim3 dimGrid(1, 1, 1); // need to be updated
   updateScalarFieldDevice<<<dimBlock, dimGrid>>>(colorFieldDevice,
                                                  particlesDevice, GRID_SIZE);
   cudaDeviceSynchronize();
