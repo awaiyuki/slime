@@ -19,13 +19,13 @@ struct Particle {
   glm::vec4 color;
   float life;
 
-  __host__ __device__ bool operator==(const Particle &p) {
+  bool operator==(const Particle &p) {
     return this->id == p.id;
   }
 };
 
-__device__ float poly6KernelDevice(glm::vec3 r, float h);
-__global__ void updateScalarFieldDevice(float *colorFieldDevice,
+extern __device__ float poly6KernelDevice(glm::vec3 r, float h);
+extern __global__ void updateScalarFieldDevice(float *colorFieldDevice,
                                         Particle *particlesDevice,
                                         int gridSize);
 

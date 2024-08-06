@@ -53,8 +53,8 @@ void Slime::render(double deltaTime) {
 
   /* SPH Simulation */
 
-  updateParticles(deltaTime);
-  updateScalarField();
+  sphSimulator->updateParticles(deltaTime);
+  sphSimulator->updateScalarField();
 
   const vector<MarchingCubes::Triangle> &triangles =
       sphSimulator->extractSurface();

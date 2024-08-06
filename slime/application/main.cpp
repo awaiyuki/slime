@@ -1,7 +1,12 @@
+
+
+
 #include <slime/engine/engine.h>
 #include <slime/object/object.h>
 #include <slime/object/plane.h>
 #include <slime/object/slime.h>
+
+using namespace std;
 
 int main() {
   slime::Engine engine;
