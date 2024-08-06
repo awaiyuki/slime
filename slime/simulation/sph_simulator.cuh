@@ -1,10 +1,11 @@
-#ifndef SPH_SIMULATOR_H
-#define SPH_SIMULATOR_H
+#ifndef SPH_SIMULATOR_CUH
+#define SPH_SIMULATOR_CUH
 
 #include "marching_cubes.h"
 #include <glm/glm.hpp>
 #include <memory>
 #include <slime/constants/sph_simulator_constants.h>
+#include <cuda_runtime.h>
 
 namespace slime {
 
@@ -20,6 +21,7 @@ struct Particle {
   }
 };
 
+__device__ float poly6KernelDevice(glm::vec3 r, float h);
 __global__ void updateScalarFieldDevice(float *colorFieldDevice,
                                         Particle *particlesDevice,
                                         int gridSize);
