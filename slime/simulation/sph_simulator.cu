@@ -3,7 +3,6 @@
 #include <cstring>
 #include <random>
 #include <iostream>
-#include <glm/gtc/constants.hpp>
 
 #define PI 3.141592653589793238462643
 #define EPSILON 0.0001
@@ -65,8 +64,13 @@ SPHSimulator::SPHSimulator() {
     particles.push_back(particle);
   }
 
+  cudaMalloc((void **)&particlesDevice,
+             sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES);
+  cudaMalloc((void **)&colorFieldDevice,
+             sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
+
   cudaMemcpy(particlesDevice, particles.data(),
-             sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE,
+             sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES,
              cudaMemcpyHostToDevice);
 }
 
@@ -86,6 +90,10 @@ void SPHSimulator::updateParticles(double deltaTime) {
       i.position.y = 0.001f;
     }
   }
+
+  cudaMemcpy(particlesDevice, particles.data(),
+             sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES,
+             cudaMemcpyHostToDevice);
 }
 
 void SPHSimulator::initScalarField() {
@@ -106,9 +114,9 @@ void SPHSimulator::updateScalarField() {
   updateScalarFieldDevice<<<dimBlock, dimGrid>>>(colorFieldDevice,
                                                  particlesDevice, GRID_SIZE);
   cudaDeviceSynchronize();
-  cudaMemcpy(colorFieldDevice, colorField,
-      sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE,
-      cudaMemcpyDeviceToHost);
+  cudaMemcpy(colorField, colorFieldDevice,
+             sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE,
+             cudaMemcpyDeviceToHost);
 }
 
 float SPHSimulator::spikyKernel(glm::vec3 r, float h) {}
@@ -151,7 +159,7 @@ void SPHSimulator::computeDensity() {
 void SPHSimulator::computePressureForce(double deltaTime) {
   for (auto &i : particles) {
     i.pressure = SPHSimulatorConstants::GAS_CONSTANT *
-                  (i.density - SPHSimulatorConstants::REST_DENSITY);
+                 (i.density - SPHSimulatorConstants::REST_DENSITY);
   }
 
   for (auto &i : particles) {

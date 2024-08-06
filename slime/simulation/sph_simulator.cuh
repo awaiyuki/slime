@@ -2,7 +2,9 @@
 #define SPH_SIMULATOR_CUH
 
 #include "marching_cubes.h"
+#define GLM_FORCE_CUDA
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include <memory>
 #include <slime/constants/sph_simulator_constants.h>
 #include <cuda_runtime.h>
@@ -16,8 +18,8 @@ struct Particle {
   glm::vec4 color;
   float life;
 
-  __host__ __device__ bool operator==(const Particle& p) {
-      return this->id == p.id;
+  __host__ __device__ bool operator==(const Particle &p) {
+    return this->id == p.id;
   }
 };
 
