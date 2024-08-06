@@ -46,9 +46,6 @@ void Slime::setup() {
   /* position attribute */
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
-
-  const vector<MarchingCubes::Triangle> &triangles =
-      sphSimulator->extractSurface(); // Needs to be executed on the GPU
 }
 
 void Slime::render(double deltaTime) {
