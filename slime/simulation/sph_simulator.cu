@@ -64,6 +64,8 @@ SPHSimulator::SPHSimulator() {
     particles.push_back(particle);
   }
 
+  memset(colorField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
+
   cudaMalloc((void **)&particlesDevice,
              sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES);
   cudaMalloc((void **)&colorFieldDevice,
@@ -97,9 +99,6 @@ void SPHSimulator::updateParticles(double deltaTime) {
 }
 
 void SPHSimulator::initScalarField() {
-  memset(colorField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
-  cudaMalloc((void **)&colorFieldDevice,
-             sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
 
   // memset(densityField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
   // memset(pressureField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE *

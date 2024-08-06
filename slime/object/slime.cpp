@@ -56,8 +56,6 @@ void Slime::render(double deltaTime) {
 
   /* SPH Simulation */
 
-  /* TODO: Do kernel function call */
-  initScalarField();
   updateParticles(deltaTime);
   updateScalarField();
 
