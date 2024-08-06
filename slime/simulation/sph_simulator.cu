@@ -10,7 +10,7 @@
 using namespace slime;
 using namespace std;
 
-__device__ float poly6KernelDevice(glm::vec3 r, float h) {
+__device__ float slime::poly6KernelDevice(glm::vec3 r, float h) {
   float rMagnitude = glm::length(r);
   if (rMagnitude > h)
     return 0.0f;
@@ -19,9 +19,9 @@ __device__ float poly6KernelDevice(glm::vec3 r, float h) {
          glm::pow(h * h - rMagnitude * rMagnitude, 3);
 }
 
-__global__ void updateScalarFieldDevice(float *colorFieldDevice,
-                                        Particle *particlesDevice,
-                                        int gridSize) {
+__global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
+                                               Particle *particlesDevice,
+                                               int gridSize) {
   int x = threadIdx.x + blockIdx.x * blockDim.x;
   int y = threadIdx.y + blockIdx.y * blockDim.y;
   int z = threadIdx.z + blockIdx.z * blockDim.z;
@@ -38,7 +38,7 @@ __global__ void updateScalarFieldDevice(float *colorFieldDevice,
         particlesDevice[j].position;
     colorQuantity +=
         particlesDevice[j].mass * (1.0 / particlesDevice[j].density) *
-        poly6KernelDevice(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
+        poly6KernelDevice(r, float(SPHSimulatorConstants::SMOOTHING_RADIUS));
     // cout << "test:"
     //      << poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS) /
     //             j.density

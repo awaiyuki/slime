@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(slime CXX CUDA)
+project(slime LANGUAGES CXX CUDA)
 
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
     ${CMAKE_SOURCE_DIR}/slime/*.h
@@ -21,6 +21,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 # CUDA
 set_target_properties(${PROJECT_NAME} PROPERTIES
                             CUDA_SEPARABLE_COMPILATION ON)
+                            
 
 # OpenGL
 find_package(OpenGL REQUIRED)

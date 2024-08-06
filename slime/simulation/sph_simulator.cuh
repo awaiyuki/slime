@@ -2,12 +2,13 @@
 #define SPH_SIMULATOR_CUH
 
 #include "marching_cubes.h"
-#define GLM_FORCE_CUDA
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <memory>
 #include <slime/constants/sph_simulator_constants.h>
-#include <cuda_runtime.h>
 
 namespace slime {
 
