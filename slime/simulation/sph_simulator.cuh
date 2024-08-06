@@ -34,7 +34,6 @@ public:
   SPHSimulator();
   ~SPHSimulator();
 
-  void initScalarField();
   void updateScalarField();
   void updateParticles(double deltaTime);
 

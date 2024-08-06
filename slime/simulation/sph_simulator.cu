@@ -101,15 +101,6 @@ void SPHSimulator::updateParticles(double deltaTime) {
              cudaMemcpyHostToDevice);
 }
 
-void SPHSimulator::initScalarField() {
-
-  // memset(densityField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
-  // memset(pressureField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE *
-  // GRID_SIZE); memset(viscosityField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE
-  // * GRID_SIZE); memset(surfaceTensionField, 0,
-  //  sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
-}
-
 void SPHSimulator::updateScalarField() {
   dim3 dimBlock(GRID_SIZE, GRID_SIZE, GRID_SIZE);
   dim3 dimGrid(1, 1, 1);
