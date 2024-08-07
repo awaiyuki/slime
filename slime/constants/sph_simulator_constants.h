@@ -3,12 +3,12 @@
 namespace slime {
 class SPHSimulatorConstants {
 public:
-  static constexpr int NUM_PARTICLES = 40;
-  static constexpr float GAS_CONSTANT = 0.1f;
-  static constexpr float REST_DENSITY = 0.1f;
-  static constexpr float VISCOSITY_COEFFICIENT = 0.1f;
-  static constexpr float SMOOTHING_RADIUS = 0.1f;
-  static constexpr float SURFACE_LEVEL = 10.0f;
+	static constexpr int NUM_PARTICLES = 50;
+	static constexpr float GAS_CONSTANT = 0.00003f;
+	static constexpr float REST_DENSITY = 1000.0f;
+	static constexpr float VISCOSITY_COEFFICIENT = 0.1f;
+	static constexpr float SMOOTHING_RADIUS = 1.0f;
+	static constexpr float SURFACE_LEVEL = 0.5f;
 };
 } // namespace slime
 

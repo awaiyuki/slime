@@ -2,7 +2,6 @@
 #define MARCHING_CUBES_H
 
 #include <cstdint>
-#define GLM_FORCE_CUDA
 #include <glm/glm.hpp>
 #include "marching_cubes_tables.h"
 #include <algorithm>
@@ -39,6 +38,7 @@ public:
   template <size_t X, size_t Y, size_t Z>
   std::vector<MarchingCubes::Triangle> march(float (&scalarField)[X][Y][Z],
                                              float surfaceLevel) {
+      std::cout << "march" << std::endl;
 
     std::vector<MarchingCubes::Triangle> triangles;
 

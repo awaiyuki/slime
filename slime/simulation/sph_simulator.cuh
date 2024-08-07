@@ -2,11 +2,10 @@
 #define SPH_SIMULATOR_CUH
 
 #include "marching_cubes.h"
+#include <glm/glm.hpp>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/constants.hpp>
 #include <memory>
 #include <slime/constants/sph_simulator_constants.h>
 
@@ -50,19 +49,15 @@ public:
   void computeGravity(double deltaTime);
 
   std::vector<MarchingCubes::Triangle> extractSurface();
+  std::vector<glm::vec3> extractParticlePositions();
 
 private:
   std::vector<Particle> particles;
   Particle *particlesDevice;
 
-  static constexpr int GRID_SIZE = 200;
+  static constexpr int GRID_SIZE = 50;
   float colorField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
   float *colorFieldDevice;
-
-  // float densityField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
-  // float pressureField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
-  // float viscosityField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
-  // float surfaceTensionField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
 };
 
 } // namespace slime
