@@ -14,7 +14,7 @@ using namespace std;
 SPHSimulator::SPHSimulator() {
   random_device rd;
   mt19937 gen(rd());
-  uniform_real_distribution<> dis(-0.2f, 0.2f);
+  uniform_real_distribution<> dis(-0.5f, 0.5f);
 
   for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
     auto particle = make_unique<Particle>();
@@ -151,9 +151,12 @@ void SPHSimulator::computeGravity(double deltaTime) {
 }
 
 void SPHSimulator::computeWallConstraint(double deltaTime) {
+
+  /* Spring-Damper Collision */
+
   for (auto &i : particles) {
-    const float FLOOR_CONSTRAINT = -2.0f;
-    const float CEILING_CONSTRAINT = 2.0f;
+    const float FLOOR_CONSTRAINT = -3.0f;
+    const float CEILING_CONSTRAINT = 3.0f;
     const float SPRING_CONSTANT = 500.0f;
     const float DAMPING = 1.0f;
     if (i->position.x < FLOOR_CONSTRAINT) {
