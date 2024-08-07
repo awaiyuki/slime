@@ -226,7 +226,7 @@ std::vector<MarchingCubes::Triangle> SPHSimulator::extractSurface() {
 std::vector<glm::vec3> SPHSimulator::extractParticlePositions() {
     vector<glm::vec3> positions;
     for (auto& i : particles) {
-        positions.push_back(i->position);
+        positions.push_back(i.position);
     }
     return positions;
 }
