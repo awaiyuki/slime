@@ -104,10 +104,10 @@ void SPHSimulator::updateParticles(double deltaTime) {
 }
 
 void SPHSimulator::updateScalarField() {
-  //dim3 dimBlock(GRID_SIZE, GRID_SIZE, GRID_SIZE);
-  //dim3 dimGrid(1, 1, 1); // need to be updated
-  //updateScalarFieldDevice<<<dimBlock, dimGrid>>>(colorFieldDevice,
-   //                                              particlesDevice, GRID_SIZE);
+  dim3 dimBlock(GRID_SIZE, GRID_SIZE, GRID_SIZE);
+  dim3 dimGrid(1, 1, 1); // need to be updated
+  updateScalarFieldDevice<<<dimBlock, dimGrid>>>(colorFieldDevice,
+                                                 particlesDevice, GRID_SIZE);
   cudaDeviceSynchronize();
   cudaMemcpy(colorField, colorFieldDevice,
              sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE,
@@ -115,12 +115,12 @@ void SPHSimulator::updateScalarField() {
 }
 
 float SPHSimulator::poly6Kernel(glm::vec3 r, float h) {
-    float rMagnitude = glm::length(r);
-    if (rMagnitude > h)
-        return 0.0f;
+  float rMagnitude = glm::length(r);
+  if (rMagnitude > h)
+    return 0.0f;
 
-    return 315.0f / (64.0f * PI * glm::pow(h, 9)) *
-        glm::pow(h * h - rMagnitude * rMagnitude, 3);
+  return 315.0f / (64.0f * PI * glm::pow(h, 9)) *
+         glm::pow(h * h - rMagnitude * rMagnitude, 3);
 }
 
 float SPHSimulator::spikyKernel(glm::vec3 r, float h) { return 0.0f; }
@@ -133,7 +133,7 @@ float SPHSimulator::gradientSpikyKernel(glm::vec3 r, float h) {
   return -45.0f / (PI * glm::pow(h, 6)) * glm::pow(h - rMagnitude, 2);
 }
 
-float SPHSimulator::viscosityKernel(glm::vec3 r, float h) { return 0.0f;  }
+float SPHSimulator::viscosityKernel(glm::vec3 r, float h) { return 0.0f; }
 
 float SPHSimulator::laplacianViscosityKernel(glm::vec3 r, float h) {
   float rMagnitude = glm::length(r);
