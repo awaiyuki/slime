@@ -46,48 +46,48 @@ void Slime::setup() {
   /* position attribute */
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
-
-  sphSimulator->initScalarField();
 }
 
 void Slime::render(double deltaTime) {
   //   cout << "render Slime" << endl;
 
   /* SPH Simulation */
+
   sphSimulator->updateParticles(deltaTime);
   // sphSimulator->updateScalarField();
 
-  const vector<glm::vec3> &positions = sphSimulator->extractParticlePositions();
+  /*
+  const vector<glm::vec3>& positions = sphSimulator->extractParticlePositions();
   cout << positions[50].x << ' ' << positions[50].y << ' ' << positions[50].z
-       << endl;
+      << endl;
   const int32_t pointCount = positions.size();
   const int32_t size = 3 * pointCount;
   unique_ptr<float[]> pointData(new float[size]);
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * size, positions.data());
+  */
+  const vector<MarchingCubes::Triangle> &triangles =
+      sphSimulator->extractSurface();
 
-  // const vector<MarchingCubes::Triangle> &triangles =
-  //     sphSimulator->extractSurface();
+  const int32_t vertexCount = 3 * triangles.size();
+  const int32_t size = 3 * vertexCount;
+  unique_ptr<float[]> triangleData(new float[size]);
 
-  // const int32_t vertexCount = 3 * triangles.size();
-  // const int32_t size = 3 * vertexCount;
-  // unique_ptr<float[]> triangleData(new float[size]);
-
-  // for (uint32_t i = 0; i < triangles.size(); i++) {
-  //   triangleData[i] = triangles[i].v1[0];
-  //   triangleData[i + 1] = triangles[i].v1[1];
-  //   triangleData[i + 2] = triangles[i].v1[2];
-  //   triangleData[i + 3] = triangles[i].v2[0];
-  //   triangleData[i + 4] = triangles[i].v2[1];
-  //   triangleData[i + 5] = triangles[i].v2[2];
-  //   triangleData[i + 6] = triangles[i].v3[0];
-  //   triangleData[i + 7] = triangles[i].v3[1];
-  //   triangleData[i + 8] = triangles[i].v3[2];
-  // }
-  // glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  // glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * size,
-  // triangleData.get());
+  for (uint32_t i = 0; i < triangles.size(); i++) {
+    triangleData[i] = triangles[i].v1[0];
+    triangleData[i + 1] = triangles[i].v1[1];
+    triangleData[i + 2] = triangles[i].v1[2];
+    triangleData[i + 3] = triangles[i].v2[0];
+    triangleData[i + 4] = triangles[i].v2[1];
+    triangleData[i + 5] = triangles[i].v2[2];
+    triangleData[i + 6] = triangles[i].v3[0];
+    triangleData[i + 7] = triangles[i].v3[1];
+    triangleData[i + 8] = triangles[i].v3[2];
+  }
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * vertexCount,
+                  triangleData.get());
 
   /* Transform */
   shader->use();

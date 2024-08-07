@@ -8,7 +8,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <slime/simulation/sph_simulator.h>
+#include <slime/simulation/sph_simulator.cuh>
 #include <slime/simulation/marching_cubes.h>
 
 namespace slime {

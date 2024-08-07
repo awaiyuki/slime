@@ -1,25 +1,39 @@
-#ifndef SPH_SIMULATOR_H
-#define SPH_SIMULATOR_H
+#ifndef SPH_SIMULATOR_CUH
+#define SPH_SIMULATOR_CUH
 
 #include "marching_cubes.h"
 #include <glm/glm.hpp>
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 #include <memory>
-#include <vector>
 #include <slime/constants/sph_simulator_constants.h>
 
 namespace slime {
 
+struct Particle {
+  int id;
+  glm::vec3 position, velocity, acceleration;
+  float density, pressure, mass;
+  glm::vec4 color;
+  float life;
+
+  bool operator==(const Particle &p) { return this->id == p.id; }
+};
+
+extern __device__ float poly6KernelDevice(glm::vec3 r, float h);
+extern __global__ void updateScalarFieldDevice(float *colorFieldDevice,
+                                               Particle *particlesDevice,
+                                               int gridSize);
+
 class SPHSimulator {
 
 public:
-  struct Particle {
-    glm::vec3 position, velocity, acceleration;
-    float density, pressure, mass;
-    glm::vec4 color;
-    float life;
-  };
   SPHSimulator();
   ~SPHSimulator();
+
+  void updateScalarField();
+  void updateParticles(double deltaTime);
 
   float poly6Kernel(glm::vec3 r, float h);
   float spikyKernel(glm::vec3 r, float h);
@@ -27,28 +41,23 @@ public:
   float viscosityKernel(glm::vec3 r, float h);
   float laplacianViscosityKernel(glm::vec3 r, float h);
 
-  void updateParticles(double deltaTime);
   void computeDensity();
   void computePressureForce(double deltaTime);
   void computeViscosityForce(double deltaTime);
   void computeGravity(double deltaTime);
   void computeWallConstraint(double deltaTime);
 
-  void initScalarField();
-  void updateScalarField();
-
   std::vector<MarchingCubes::Triangle> extractSurface();
   std::vector<glm::vec3> extractParticlePositions();
 
 private:
-  std::vector<std::unique_ptr<Particle>> particles;
+  std::vector<Particle> particles;
+  Particle *particlesDevice;
 
-  static constexpr int GRID_SIZE = 20;
-  float densityField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
-  float pressureField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
-  float viscosityField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
+  static constexpr int GRID_SIZE = 50;
   float colorField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
-  float surfaceTensionField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
+  float *colorFieldDevice;
 };
+
 } // namespace slime
 #endif
