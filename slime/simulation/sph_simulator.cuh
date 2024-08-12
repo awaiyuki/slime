@@ -1,13 +1,13 @@
 #ifndef SPH_SIMULATOR_CUH
 #define SPH_SIMULATOR_CUH
 
-#include "marching_cubes.h"
-#include <glm/glm.hpp>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
+#include <glm/glm.hpp>
 #include <memory>
 #include <slime/constants/sph_simulator_constants.h>
+#include "marching_cubes.h"
 
 namespace slime {
 
@@ -18,15 +18,8 @@ struct Particle {
   glm::vec4 color;
   float life;
 
-  bool operator==(const Particle &p) {
-    return this->id == p.id;
-  }
+  bool operator==(const Particle &p) { return this->id == p.id; }
 };
-
-extern __device__ float poly6KernelDevice(glm::vec3 r, float h);
-extern __global__ void updateScalarFieldDevice(float *colorFieldDevice,
-                                        Particle *particlesDevice,
-                                        int gridSize);
 
 class SPHSimulator {
 
@@ -47,6 +40,7 @@ public:
   void computePressureForce(double deltaTime);
   void computeViscosityForce(double deltaTime);
   void computeGravity(double deltaTime);
+  void computeWallConstraint(double deltaTime);
 
   std::vector<MarchingCubes::Triangle> extractSurface();
   std::vector<glm::vec3> extractParticlePositions();

@@ -43,31 +43,26 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
   colorFieldDevice[x * gridSize * gridSize + y * gridSize + z] = colorQuantity;
 }
 
-__global__ void slime::updateParticlesDevice(double deltaTime) {
-  computeDensity();
-  computePressureForce(deltaTime);
-  computeViscosityForce(deltaTime);
-  computeGravity(deltaTime);
-  computeWallConstraint(deltaTime);
+__global__ void slime::updateParticlesDevice(Particle *particlesDevice,
+                                             double deltaTime) {
+  int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  auto &i = particleDevice[idx];
+
+  computeDensityDevice(particlesDevice, idx);
+  computePressureForceDevice(particlesDevice, idx, deltaTime);
+  computeViscosityForceDevice(particlesDevice, idx, deltaTime);
+  computeGravityDevice(particlesDevice, idx, deltaTime);
+  computeWallConstraintDevice(particlesDevice, idx, deltaTime);
 
   /* Update the positions of particles */
-  for (auto &i : particles) {
-    i.position += i.velocity * static_cast<float>(deltaTime);
-    /* TODO: Keep particles within grid */
-    if (i.position.y < 0.0f) {
-      i.position.y = 0.001f;
-    }
-  }
-  cout << "update particles" << endl;
-  cudaMemcpy(particlesDevice, particles.data(),
-             sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES,
-             cudaMemcpyHostToDevice);
+  i.position += i.velocity * static_cast<float>(deltaTime);
 }
 
-__device__ void slime::computeDensityDevice() {
-  for (auto &i : particles) {
+__device__ void slime::computeDensityDevice(Particle *particlesDevice) {
+  for (auto &i : particlesDevice) {
     i.density = 0.0f;
-    for (auto &j : particles) {
+    for (auto &j : particlesDevice) {
       if (i == j)
         continue;
 
@@ -78,15 +73,16 @@ __device__ void slime::computeDensityDevice() {
   }
 }
 
-__device__ void slime::computePressureForceDevice(double deltaTime) {
-  for (auto &i : particles) {
+__device__ void slime::computePressureForceDevice(Particle *particlesDevice,
+                                                  double deltaTime) {
+  for (auto &i : particlesDevice) {
     i.pressure = SPHSimulatorConstants::GAS_CONSTANT *
                  (i.density - SPHSimulatorConstants::REST_DENSITY);
   }
 
-  for (auto &i : particles) {
+  for (auto &i : particlesDevice) {
     glm::vec3 pressureForce = glm::vec3(0.0f, 0.0f, 0.0f);
-    for (auto &j : particles) {
+    for (auto &j : particlesDevice) {
       if (i == j)
         continue;
 
@@ -105,10 +101,11 @@ __device__ void slime::computePressureForceDevice(double deltaTime) {
   }
 }
 
-__device__ void slime::computeViscosityForceDevice(double deltaTime) {
-  for (auto &i : particles) {
+__device__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
+                                                   double deltaTime) {
+  for (auto &i : particlesDevice) {
     glm::vec3 viscosityForce = glm::vec3(0.0f, 0.0f, 0.0f);
-    for (auto &j : particles) {
+    for (auto &j : particlesDevice) {
       if (i == j)
         continue;
 
@@ -128,19 +125,21 @@ __device__ void slime::computeViscosityForceDevice(double deltaTime) {
   }
 }
 
-__device__ void slime::computeGravityDevice(double deltaTime) {
-  for (auto &i : particles) {
+__device__ void slime::computeGravityDevice(Particle *particlesDevice,
+                                            double deltaTime) {
+  for (auto &i : particlesDevice) {
     auto acceleration = glm::vec3(0, -0.098f, 0);
     auto deltaVelocity = acceleration * float(deltaTime);
     i.velocity += deltaVelocity;
   }
 }
 
-__device__ void slime::computeWallConstraintDevice(double deltaTime) {
+__device__ void slime::computeWallConstraintDevice(Particle *particlesDevice,
+                                                   double deltaTime) {
 
   /* Spring-Damper Collision */
 
-  for (auto &i : particles) {
+  for (auto &i : particlesDevice) {
     const float FLOOR_CONSTRAINT = -3.0f;
     const float CEILING_CONSTRAINT = 3.0f;
     const float SPRING_CONSTANT = 500.0f;

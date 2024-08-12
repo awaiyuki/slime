@@ -1,51 +1,12 @@
 
 #include "sph_simulator.cuh"
+#include "sph_simulator_kernel.cuh"
 #include <cstring>
 #include <random>
 #include <iostream>
-#define PI 3.141592653589793238462643
-#define EPSILON 0.0001
 
 using namespace slime;
 using namespace std;
-
-__device__ float slime::poly6KernelDevice(glm::vec3 r, float h) {
-  float rMagnitude = glm::length(r);
-  if (rMagnitude > h)
-    return 0.0f;
-
-  return 315.0f / (64.0f * PI * glm::pow(h, 9)) *
-         glm::pow(h * h - rMagnitude * rMagnitude, 3);
-}
-
-__global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
-                                               Particle *particlesDevice,
-                                               int gridSize) {
-  int x = threadIdx.x + blockIdx.x * blockDim.x;
-  int y = threadIdx.y + blockIdx.y * blockDim.y;
-  int z = threadIdx.z + blockIdx.z * blockDim.z;
-
-  if (x >= gridSize || y >= gridSize || z >= gridSize)
-    return;
-
-  float colorQuantity = 0.0f;
-  for (int j = 0; j < SPHSimulatorConstants::NUM_PARTICLES; j++) {
-    glm::vec3 r =
-        glm::vec3(static_cast<float>(x) / static_cast<float>(gridSize),
-                  static_cast<float>(y) / static_cast<float>(gridSize),
-                  static_cast<float>(z) / static_cast<float>(gridSize)) -
-        particlesDevice[j].position;
-    colorQuantity +=
-        particlesDevice[j].mass * (1.0 / particlesDevice[j].density) *
-        poly6KernelDevice(r, float(SPHSimulatorConstants::SMOOTHING_RADIUS));
-    // cout << "test:"
-    //      << poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS) /
-    //             j.density
-    //      << endl;
-  }
-  // cout << "colorQuantity:" << colorQuantity << endl;
-  colorFieldDevice[x * gridSize * gridSize + y * gridSize + z] = colorQuantity;
-}
 
 SPHSimulator::SPHSimulator() {
   random_device rd;
@@ -60,6 +21,7 @@ SPHSimulator::SPHSimulator() {
     float y = static_cast<float>(dis(gen));
     float z = static_cast<float>(dis(gen));
     particle.position = glm::vec3(x, y, z);
+    particle.velocity = glm::vec3(0, 0, 0);
 
     // cout << "initial position: " << x << y << z << endl;
     particle.mass = 1.0f;
@@ -84,28 +46,13 @@ SPHSimulator::~SPHSimulator() {
 }
 
 void SPHSimulator::updateParticles(double deltaTime) {
-  computeDensity();
-  computePressureForce(deltaTime);
-  computeViscosityForce(deltaTime);
-  computeGravity(deltaTime);
-
-  /* Update the positions of particles */
-  for (auto &i : particles) {
-    i.position += i.velocity * static_cast<float>(deltaTime);
-    /* TODO: Keep particles within grid */
-    if (i.position.y < 0.0f) {
-      i.position.y = 0.001f;
-    }
-  }
-  cout << "update particles" << endl;
-  cudaMemcpy(particlesDevice, particles.data(),
-             sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES,
-             cudaMemcpyHostToDevice);
+  updateParticlesDevice<<<1, SPHSimulatorConstants::NUM_PARTICLES>>>(
+      particlesDevice, deltaTime);
 }
 
 void SPHSimulator::updateScalarField() {
-  dim3 dimBlock(GRID_SIZE, GRID_SIZE, GRID_SIZE);
-  dim3 dimGrid(1, 1, 1); // need to be updated
+  dim3 dimBlock(1, 1, 1);
+  dim3 dimGrid(GRID_SIZE, GRID_SIZE, GRID_SIZE); // need to be updated
   updateScalarFieldDevice<<<dimBlock, dimGrid>>>(colorFieldDevice,
                                                  particlesDevice, GRID_SIZE);
   cudaDeviceSynchronize();
@@ -153,9 +100,6 @@ void SPHSimulator::computeDensity() {
       auto r = j.position - i.position;
       i.density +=
           j.mass * poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
-    }
-    if (i.density < EPSILON) {
-      i.density = 2 * EPSILON;
     }
   }
 }
@@ -218,15 +162,71 @@ void SPHSimulator::computeGravity(double deltaTime) {
   }
 }
 
+void SPHSimulator::computeWallConstraint(double deltaTime) {
+
+  /* Spring-Damper Collision */
+
+  for (auto &i : particles) {
+    const float FLOOR_CONSTRAINT = -3.0f;
+    const float CEILING_CONSTRAINT = 3.0f;
+    const float SPRING_CONSTANT = 500.0f;
+    const float DAMPING = 1.0f;
+    if (i.position.x < FLOOR_CONSTRAINT) {
+      auto deltaVelocity =
+          (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i.position.x) +
+           DAMPING * i.velocity.x) *
+          float(deltaTime);
+      i.velocity.x += deltaVelocity;
+    }
+
+    if (i.position.x > CEILING_CONSTRAINT) {
+      auto deltaVelocity =
+          (SPRING_CONSTANT * (i.position.x - CEILING_CONSTRAINT) +
+           DAMPING * i.velocity.x) *
+          float(deltaTime);
+      i.velocity.x -= deltaVelocity;
+    }
+    if (i.position.y < FLOOR_CONSTRAINT) {
+      auto deltaVelocity =
+          (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i.position.y) +
+           DAMPING * i.velocity.y) *
+          float(deltaTime);
+      i.velocity.y += deltaVelocity;
+    }
+
+    if (i.position.y > CEILING_CONSTRAINT) {
+      auto deltaVelocity =
+          (SPRING_CONSTANT * (i.position.y - CEILING_CONSTRAINT) +
+           DAMPING * i.velocity.y) *
+          float(deltaTime);
+      i.velocity.y -= deltaVelocity;
+    }
+    if (i.position.z < FLOOR_CONSTRAINT) {
+      auto deltaVelocity =
+          (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i.position.z) +
+           DAMPING * i.velocity.z) *
+          float(deltaTime);
+      i.velocity.z += deltaVelocity;
+    }
+
+    if (i.position.z > CEILING_CONSTRAINT) {
+      auto deltaVelocity =
+          (SPRING_CONSTANT * (i.position.z - CEILING_CONSTRAINT) +
+           DAMPING * i.velocity.z) *
+          float(deltaTime);
+      i.velocity.z -= deltaVelocity;
+    }
+  }
+}
 std::vector<MarchingCubes::Triangle> SPHSimulator::extractSurface() {
   MarchingCubes marchingCubes;
   return marchingCubes.march(colorField, SPHSimulatorConstants::SURFACE_LEVEL);
 }
 
 std::vector<glm::vec3> SPHSimulator::extractParticlePositions() {
-    vector<glm::vec3> positions;
-    for (auto& i : particles) {
-        positions.push_back(i.position);
-    }
-    return positions;
+  vector<glm::vec3> positions;
+  for (auto &i : particles) {
+    positions.push_back(i.position);
+  }
+  return positions;
 }

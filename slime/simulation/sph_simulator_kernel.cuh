@@ -12,13 +12,20 @@ extern __global__ void updateScalarFieldDevice(float *colorFieldDevice,
                                                Particle *particlesDevice,
                                                int gridSize);
 
-extern __device__ void computeDensityDevice();
+extern __global__ void slime::updateParticlesDevice(Particle *particlesDevice,
+                                                    double deltaTime);
 
-extern __device__ void computePressureForceDevice(double deltaTime);
+extern __device__ void computeDensityDevice(Particle *particlesDevice);
 
-extern __device__ void computeViscosityForceDevice(double deltaTime);
+extern __device__ void computePressureForceDevice(Particle *particlesDevice,
+                                                  double deltaTime);
 
-extern __device__ void computeGravityDevice(double deltaTime);
+extern __device__ void computeViscosityForceDevice(Particle *particlesDevice,
+                                                   double deltaTime);
 
-extern __device__ void computeWallConstraintDevice(double deltaTime);
+extern __device__ void computeGravityDevice(Particle *particlesDevice,
+                                            double deltaTime);
+
+extern __device__ void computeWallConstraintDevice(Particle *particlesDevice,
+                                                   double deltaTime);
 } // namespace slime
