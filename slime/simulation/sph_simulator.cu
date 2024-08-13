@@ -24,7 +24,7 @@ SPHSimulator::SPHSimulator() {
     particle.velocity = make_float3(0, 0, 0);
 
     // cout << "initial position: " << x << y << z << endl;
-    particle.mass = 1.0f;
+    particle.mass = SPHSimulatorConstants::PARTICLE_MASS;
     particles.push_back(particle);
   }
 
