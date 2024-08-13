@@ -1,17 +1,39 @@
-#include "sph_simulator_kernel.cuh"
+#include "sph_simulator_parallel.cuh"
 #include <slime/constants/sph_simulator_constants.h>
 #define PI 3.141592653589793238462643
 #define EPSILON 0.000001
 
 using namespace slime;
 
-__device__ float slime::poly6KernelDevice(glm::vec3 r, float h) {
+__global__ float slime::poly6KernelDevice(glm::vec3 r, float h) {
   float rMagnitude = glm::length(r);
   if (rMagnitude > h)
     return 0.0f;
 
   return 315.0f / (64.0f * PI * glm::pow(h, 9)) *
          glm::pow(h * h - rMagnitude * rMagnitude, 3);
+}
+
+__device__ float slime::spikyKernelDevice(glm::vec3 r, float h) { return 0.0f; }
+
+__device__ float slime::gradientSpikyKernelDevice(glm::vec3 r, float h) {
+  float rMagnitude = glm::length(r);
+  if (rMagnitude > h)
+    return 0.0f;
+
+  return -45.0f / (PI * glm::pow(h, 6)) * glm::pow(h - rMagnitude, 2);
+}
+
+__device__ float slime::viscosityKernelDevice(glm::vec3 r, float h) {
+  return 0.0f;
+}
+
+__device__ float slime::laplacianViscosityKernelDevice(glm::vec3 r, float h) {
+  float rMagnitude = glm::length(r);
+  if (rMagnitude > h)
+    return 0.0f;
+
+  return 45 / (PI * glm::pow(h, 6)) * (h - rMagnitude);
 }
 
 __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
@@ -43,37 +65,22 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
   colorFieldDevice[x * gridSize * gridSize + y * gridSize + z] = colorQuantity;
 }
 
-__global__ void slime::updateParticlesDevice(Particle *particlesDevice,
-                                             double deltaTime) {
-  int idx = threadIdx.x + blockIdx.x * blockDim.x;
+__global__ void slime::computeDensityDevice(Particle *particlesDevice) {
+  int idx = threadIdx.x + blockDim.x * blockIdx.x;
 
-  auto &i = particleDevice[idx];
+  auto &i = particlesDevice[idx];
+  i.density = 0.0f;
+  for (auto &j : particlesDevice) {
+    if (i == j)
+      continue;
 
-  computeDensityDevice(particlesDevice, idx);
-  computePressureForceDevice(particlesDevice, idx, deltaTime);
-  computeViscosityForceDevice(particlesDevice, idx, deltaTime);
-  computeGravityDevice(particlesDevice, idx, deltaTime);
-  computeWallConstraintDevice(particlesDevice, idx, deltaTime);
-
-  /* Update the positions of particles */
-  i.position += i.velocity * static_cast<float>(deltaTime);
-}
-
-__device__ void slime::computeDensityDevice(Particle *particlesDevice) {
-  for (auto &i : particlesDevice) {
-    i.density = 0.0f;
-    for (auto &j : particlesDevice) {
-      if (i == j)
-        continue;
-
-      auto r = j.position - i.position;
-      i.density +=
-          j.mass * poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
-    }
+    auto r = j.position - i.position;
+    i.density +=
+        j.mass * poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
   }
 }
 
-__device__ void slime::computePressureForceDevice(Particle *particlesDevice,
+__global__ void slime::computePressureForceDevice(Particle *particlesDevice,
                                                   double deltaTime) {
   for (auto &i : particlesDevice) {
     i.pressure = SPHSimulatorConstants::GAS_CONSTANT *
@@ -93,7 +100,7 @@ __device__ void slime::computePressureForceDevice(Particle *particlesDevice,
       pressureForce +=
           -glm::normalize(r) * j.mass * (i.pressure + j.pressure) /
           (2.0f * j.density) *
-          gradientSpikyKernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
+          gradientSpikyKernelDevice(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
     }
     auto acceleration = pressureForce / i.mass;
     auto deltaVelocity = acceleration * float(deltaTime);
@@ -101,7 +108,7 @@ __device__ void slime::computePressureForceDevice(Particle *particlesDevice,
   }
 }
 
-__device__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
+__global__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
                                                    double deltaTime) {
   for (auto &i : particlesDevice) {
     glm::vec3 viscosityForce = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -113,9 +120,9 @@ __device__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
         continue;
 
       auto r = j.position - i.position;
-      viscosityForce +=
-          j.mass * (j.velocity - i.velocity) / j.density *
-          laplacianViscosityKernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
+      viscosityForce += j.mass * (j.velocity - i.velocity) / j.density *
+                        laplacianViscosityKernelDevice(
+                            r, SPHSimulatorConstants::SMOOTHING_RADIUS);
     }
     viscosityForce *= SPHSimulatorConstants::VISCOSITY_COEFFICIENT;
 
@@ -125,7 +132,7 @@ __device__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
   }
 }
 
-__device__ void slime::computeGravityDevice(Particle *particlesDevice,
+__global__ void slime::computeGravityDevice(Particle *particlesDevice,
                                             double deltaTime) {
   for (auto &i : particlesDevice) {
     auto acceleration = glm::vec3(0, -0.098f, 0);
@@ -134,7 +141,7 @@ __device__ void slime::computeGravityDevice(Particle *particlesDevice,
   }
 }
 
-__device__ void slime::computeWallConstraintDevice(Particle *particlesDevice,
+__global__ void slime::computeWallConstraintDevice(Particle *particlesDevice,
                                                    double deltaTime) {
 
   /* Spring-Damper Collision */

@@ -1,6 +1,6 @@
 
 #include "sph_simulator.cuh"
-#include "sph_simulator_kernel.cuh"
+#include "sph_simulator_parallel.cuh"
 #include <cstring>
 #include <random>
 #include <iostream>
@@ -45,9 +45,34 @@ SPHSimulator::~SPHSimulator() {
   cudaFree(colorFieldDevice);
 }
 
-void SPHSimulator::updateParticles(double deltaTime) {
-  updateParticlesDevice<<<1, SPHSimulatorConstants::NUM_PARTICLES>>>(
+void slime::updateParticles(double deltaTime) {
+
+  computeDensityDevice<<<1, SPHSimulatorConstants::NUM_PARTICLES>>>(
+      particlesDevice);
+  cudaDeviceSynchronize();
+
+  computePressureForceDevice<<<1, SPHSimulatorConstants::NUM_PARTICLES>>>(
       particlesDevice, deltaTime);
+  cudaDeviceSynchronize();
+
+  computeViscosityForceDevice<<<1, SPHSimulatorConstants::NUM_PARTICLES>>>(
+      particlesDevice, deltaTime);
+  cudaDeviceSynchronize();
+
+  computeGravityDevice<<<1, SPHSimulatorConstants::NUM_PARTICLES>>>(
+      particlesDevice, deltaTime);
+  cudaDeviceSynchronize();
+
+  computeWallConstraintDevice<<<1, SPHSimulatorConstants::NUM_PARTICLES>>>(
+      particlesDevice, deltaTime);
+  cudaDeviceSynchronize();
+
+  computePositionParallel<<<1, SPHSimulatorConstants::NUM_PARTICLES>>>(
+      particlesDevice, deltaTime);
+  cudaDeviceSynchronize();
+
+  /* Update the positions of particles */
+  i.position += i.velocity * static_cast<float>(deltaTime);
 }
 
 void SPHSimulator::updateScalarField() {
