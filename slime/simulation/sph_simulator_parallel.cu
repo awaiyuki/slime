@@ -67,78 +67,85 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
 
 __global__ void slime::computeDensityDevice(Particle *particlesDevice) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-
   auto &i = particlesDevice[idx];
+
   i.density = 0.0f;
-  for (auto &j : particlesDevice) {
+  for (int idx_j = 0; idx_j < SPHSimulatorConstants::NUM_PARTICLES; idx_j++) {
+    auto &j = particlesDevice[idx_j];
+
     if (i == j)
       continue;
 
     auto r = j.position - i.position;
     i.density +=
-        j.mass * poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
+        j.mass * poly6KernelDevice(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
   }
 }
 
+__global__ void slime::computePressureDevice(Particle *particlesDevice) {
+  int idx = threadIdx.x + blockDim.x * blockIdx.x;
+  auto &i = particlesDevice[idx];
+  i.pressure = SPHSimulatorConstants::GAS_CONSTANT *
+               (i.density - SPHSimulatorConstants::REST_DENSITY);
+}
 __global__ void slime::computePressureForceDevice(Particle *particlesDevice,
                                                   double deltaTime) {
-  for (auto &i : particlesDevice) {
-    i.pressure = SPHSimulatorConstants::GAS_CONSTANT *
-                 (i.density - SPHSimulatorConstants::REST_DENSITY);
+  int idx = threadIdx.x + blockDim.x * blockIdx.x;
+  auto &i = particlesDevice[idx];
+
+  glm::vec3 pressureForce = glm::vec3(0.0f, 0.0f, 0.0f);
+  for (int idx_j = 0; idx_j < SPHSimulatorConstants::NUM_PARTICLES; idx_j++) {
+    auto &j = particlesDevice[idx_j];
+
+    if (i == j)
+      continue;
+
+    if (j.density < EPSILON)
+      continue;
+
+    auto r = j.position - i.position;
+    pressureForce +=
+        -glm::normalize(r) * j.mass * (i.pressure + j.pressure) /
+        (2.0f * j.density) *
+        gradientSpikyKernelDevice(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
   }
-
-  for (auto &i : particlesDevice) {
-    glm::vec3 pressureForce = glm::vec3(0.0f, 0.0f, 0.0f);
-    for (auto &j : particlesDevice) {
-      if (i == j)
-        continue;
-
-      if (j.density < EPSILON)
-        continue;
-
-      auto r = j.position - i.position;
-      pressureForce +=
-          -glm::normalize(r) * j.mass * (i.pressure + j.pressure) /
-          (2.0f * j.density) *
-          gradientSpikyKernelDevice(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
-    }
-    auto acceleration = pressureForce / i.mass;
-    auto deltaVelocity = acceleration * float(deltaTime);
-    i.velocity += deltaVelocity;
-  }
+  auto acceleration = pressureForce / i.mass;
+  auto deltaVelocity = acceleration * float(deltaTime);
+  i.velocity += deltaVelocity;
 }
 
 __global__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
                                                    double deltaTime) {
-  for (auto &i : particlesDevice) {
-    glm::vec3 viscosityForce = glm::vec3(0.0f, 0.0f, 0.0f);
-    for (auto &j : particlesDevice) {
-      if (i == j)
-        continue;
+  int idx = threadIdx.x + blockDim.x * blockIdx.x;
+  auto &i = particlesDevice[idx];
+  glm::vec3 viscosityForce = glm::vec3(0.0f, 0.0f, 0.0f);
+  for (int idx_j = 0; idx_j < SPHSimulatorConstants::NUM_PARTICLES; idx_j++) {
+    auto &j = particlesDevice[idx_j];
+    if (i == j)
+      continue;
 
-      if (j.density < EPSILON)
-        continue;
+    if (j.density < EPSILON)
+      continue;
 
-      auto r = j.position - i.position;
-      viscosityForce += j.mass * (j.velocity - i.velocity) / j.density *
-                        laplacianViscosityKernelDevice(
-                            r, SPHSimulatorConstants::SMOOTHING_RADIUS);
-    }
-    viscosityForce *= SPHSimulatorConstants::VISCOSITY_COEFFICIENT;
-
-    auto acceleration = viscosityForce / i.mass;
-    auto deltaVelocity = acceleration * float(deltaTime);
-    i.velocity += deltaVelocity;
+    auto r = j.position - i.position;
+    viscosityForce += j.mass * (j.velocity - i.velocity) / j.density *
+                      laplacianViscosityKernelDevice(
+                          r, SPHSimulatorConstants::SMOOTHING_RADIUS);
   }
+  viscosityForce *= SPHSimulatorConstants::VISCOSITY_COEFFICIENT;
+
+  auto acceleration = viscosityForce / i.mass;
+  auto deltaVelocity = acceleration * float(deltaTime);
+  i.velocity += deltaVelocity;
 }
 
 __global__ void slime::computeGravityDevice(Particle *particlesDevice,
                                             double deltaTime) {
-  for (auto &i : particlesDevice) {
-    auto acceleration = glm::vec3(0, -0.098f, 0);
-    auto deltaVelocity = acceleration * float(deltaTime);
-    i.velocity += deltaVelocity;
-  }
+  int idx = threadIdx.x + blockDim.x * blockIdx.x;
+  auto &i = particlesDevice[idx];
+  auto acceleration = glm::vec3(0, -0.098f, 0);
+  auto deltaVelocity = acceleration * float(deltaTime);
+  i.velocity += deltaVelocity;
 }
 
 __global__ void slime::computeWallConstraintDevice(Particle *particlesDevice,
@@ -146,55 +153,52 @@ __global__ void slime::computeWallConstraintDevice(Particle *particlesDevice,
 
   /* Spring-Damper Collision */
 
-  for (auto &i : particlesDevice) {
-    const float FLOOR_CONSTRAINT = -3.0f;
-    const float CEILING_CONSTRAINT = 3.0f;
-    const float SPRING_CONSTANT = 500.0f;
-    const float DAMPING = 1.0f;
-    if (i.position.x < FLOOR_CONSTRAINT) {
-      auto deltaVelocity =
-          (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i.position.x) +
-           DAMPING * i.velocity.x) *
-          float(deltaTime);
-      i.velocity.x += deltaVelocity;
-    }
+  int idx = threadIdx.x + blockDim.x * blockIdx.x;
+  auto &i = particlesDevice[idx];
+  const float FLOOR_CONSTRAINT = -3.0f;
+  const float CEILING_CONSTRAINT = 3.0f;
+  const float SPRING_CONSTANT = 500.0f;
+  const float DAMPING = 1.0f;
+  if (i.position.x < FLOOR_CONSTRAINT) {
+    auto deltaVelocity = (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i.position.x) +
+                          DAMPING * i.velocity.x) *
+                         float(deltaTime);
+    i.velocity.x += deltaVelocity;
+  }
 
-    if (i.position.x > CEILING_CONSTRAINT) {
-      auto deltaVelocity =
-          (SPRING_CONSTANT * (i.position.x - CEILING_CONSTRAINT) +
-           DAMPING * i.velocity.x) *
-          float(deltaTime);
-      i.velocity.x -= deltaVelocity;
-    }
-    if (i.position.y < FLOOR_CONSTRAINT) {
-      auto deltaVelocity =
-          (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i.position.y) +
-           DAMPING * i.velocity.y) *
-          float(deltaTime);
-      i.velocity.y += deltaVelocity;
-    }
+  if (i.position.x > CEILING_CONSTRAINT) {
+    auto deltaVelocity =
+        (SPRING_CONSTANT * (i.position.x - CEILING_CONSTRAINT) +
+         DAMPING * i.velocity.x) *
+        float(deltaTime);
+    i.velocity.x -= deltaVelocity;
+  }
+  if (i.position.y < FLOOR_CONSTRAINT) {
+    auto deltaVelocity = (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i.position.y) +
+                          DAMPING * i.velocity.y) *
+                         float(deltaTime);
+    i.velocity.y += deltaVelocity;
+  }
 
-    if (i.position.y > CEILING_CONSTRAINT) {
-      auto deltaVelocity =
-          (SPRING_CONSTANT * (i.position.y - CEILING_CONSTRAINT) +
-           DAMPING * i.velocity.y) *
-          float(deltaTime);
-      i.velocity.y -= deltaVelocity;
-    }
-    if (i.position.z < FLOOR_CONSTRAINT) {
-      auto deltaVelocity =
-          (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i.position.z) +
-           DAMPING * i.velocity.z) *
-          float(deltaTime);
-      i.velocity.z += deltaVelocity;
-    }
+  if (i.position.y > CEILING_CONSTRAINT) {
+    auto deltaVelocity =
+        (SPRING_CONSTANT * (i.position.y - CEILING_CONSTRAINT) +
+         DAMPING * i.velocity.y) *
+        float(deltaTime);
+    i.velocity.y -= deltaVelocity;
+  }
+  if (i.position.z < FLOOR_CONSTRAINT) {
+    auto deltaVelocity = (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i.position.z) +
+                          DAMPING * i.velocity.z) *
+                         float(deltaTime);
+    i.velocity.z += deltaVelocity;
+  }
 
-    if (i.position.z > CEILING_CONSTRAINT) {
-      auto deltaVelocity =
-          (SPRING_CONSTANT * (i.position.z - CEILING_CONSTRAINT) +
-           DAMPING * i.velocity.z) *
-          float(deltaTime);
-      i.velocity.z -= deltaVelocity;
-    }
+  if (i.position.z > CEILING_CONSTRAINT) {
+    auto deltaVelocity =
+        (SPRING_CONSTANT * (i.position.z - CEILING_CONSTRAINT) +
+         DAMPING * i.velocity.z) *
+        float(deltaTime);
+    i.velocity.z -= deltaVelocity;
   }
 }

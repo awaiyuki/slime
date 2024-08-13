@@ -18,13 +18,15 @@ extern __global__ void updateScalarFieldDevice(float *colorFieldDevice,
 
 extern __global__ void computeDensityDevice(Particle *particlesDevice);
 
+extern __global__ void computePressureDevice(Particle *particlesDevice);
+
 extern __global__ void computePressureForceDevice(Particle *particlesDevice,
                                                   double deltaTime);
 
 extern __global__ void computeViscosityForceDevice(Particle *particlesDevice,
                                                    double deltaTime);
 
-extern __global__ void computeGravityDevice(Particle *particlesDevice, int idx,
+extern __global__ void computeGravityDevice(Particle *particlesDevice,
                                             double deltaTime);
 
 extern __global__ void computeWallConstraintDevice(Particle *particlesDevice,

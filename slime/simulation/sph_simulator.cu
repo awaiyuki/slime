@@ -45,11 +45,14 @@ SPHSimulator::~SPHSimulator() {
   cudaFree(colorFieldDevice);
 }
 
-void slime::updateParticles(double deltaTime) {
+void SPHSimulator::updateParticles(double deltaTime) {
 
   computeDensityDevice<<<1, SPHSimulatorConstants::NUM_PARTICLES>>>(
       particlesDevice);
   cudaDeviceSynchronize();
+
+  computePressureDevice<<<1, SPHSimulatorConstants::NUM_PARTICLES>>>(
+      particlesDevice);
 
   computePressureForceDevice<<<1, SPHSimulatorConstants::NUM_PARTICLES>>>(
       particlesDevice, deltaTime);
@@ -86,163 +89,6 @@ void SPHSimulator::updateScalarField() {
              cudaMemcpyDeviceToHost);
 }
 
-float SPHSimulator::poly6Kernel(glm::vec3 r, float h) {
-  float rMagnitude = glm::length(r);
-  if (rMagnitude > h)
-    return 0.0f;
-
-  return 315.0f / (64.0f * PI * glm::pow(h, 9)) *
-         glm::pow(h * h - rMagnitude * rMagnitude, 3);
-}
-
-float SPHSimulator::spikyKernel(glm::vec3 r, float h) { return 0.0f; }
-
-float SPHSimulator::gradientSpikyKernel(glm::vec3 r, float h) {
-  float rMagnitude = glm::length(r);
-  if (rMagnitude > h)
-    return 0.0f;
-
-  return -45.0f / (PI * glm::pow(h, 6)) * glm::pow(h - rMagnitude, 2);
-}
-
-float SPHSimulator::viscosityKernel(glm::vec3 r, float h) { return 0.0f; }
-
-float SPHSimulator::laplacianViscosityKernel(glm::vec3 r, float h) {
-  float rMagnitude = glm::length(r);
-  if (rMagnitude > h)
-    return 0.0f;
-
-  return 45 / (PI * glm::pow(h, 6)) * (h - rMagnitude);
-}
-
-void SPHSimulator::computeDensity() {
-  for (auto &i : particles) {
-    i.density = 0.0f;
-    for (auto &j : particles) {
-      if (i == j)
-        continue;
-
-      auto r = j.position - i.position;
-      i.density +=
-          j.mass * poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
-    }
-  }
-}
-
-void SPHSimulator::computePressureForce(double deltaTime) {
-  for (auto &i : particles) {
-    i.pressure = SPHSimulatorConstants::GAS_CONSTANT *
-                 (i.density - SPHSimulatorConstants::REST_DENSITY);
-  }
-
-  for (auto &i : particles) {
-    glm::vec3 pressureForce = glm::vec3(0.0f, 0.0f, 0.0f);
-    for (auto &j : particles) {
-      if (i == j)
-        continue;
-
-      if (j.density < EPSILON)
-        continue;
-
-      auto r = j.position - i.position;
-      pressureForce +=
-          -glm::normalize(r) * j.mass * (i.pressure + j.pressure) /
-          (2.0f * j.density) *
-          gradientSpikyKernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
-    }
-    auto acceleration = pressureForce / i.mass;
-    auto deltaVelocity = acceleration * float(deltaTime);
-    i.velocity += deltaVelocity;
-  }
-}
-
-void SPHSimulator::computeViscosityForce(double deltaTime) {
-  for (auto &i : particles) {
-    glm::vec3 viscosityForce = glm::vec3(0.0f, 0.0f, 0.0f);
-    for (auto &j : particles) {
-      if (i == j)
-        continue;
-
-      if (j.density < EPSILON)
-        continue;
-
-      auto r = j.position - i.position;
-      viscosityForce +=
-          j.mass * (j.velocity - i.velocity) / j.density *
-          laplacianViscosityKernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
-    }
-    viscosityForce *= SPHSimulatorConstants::VISCOSITY_COEFFICIENT;
-
-    auto acceleration = viscosityForce / i.mass;
-    auto deltaVelocity = acceleration * float(deltaTime);
-    i.velocity += deltaVelocity;
-  }
-}
-
-void SPHSimulator::computeGravity(double deltaTime) {
-  for (auto &i : particles) {
-    auto acceleration = glm::vec3(0, -0.098f, 0);
-    auto deltaVelocity = acceleration * float(deltaTime);
-    i.velocity += deltaVelocity;
-  }
-}
-
-void SPHSimulator::computeWallConstraint(double deltaTime) {
-
-  /* Spring-Damper Collision */
-
-  for (auto &i : particles) {
-    const float FLOOR_CONSTRAINT = -3.0f;
-    const float CEILING_CONSTRAINT = 3.0f;
-    const float SPRING_CONSTANT = 500.0f;
-    const float DAMPING = 1.0f;
-    if (i.position.x < FLOOR_CONSTRAINT) {
-      auto deltaVelocity =
-          (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i.position.x) +
-           DAMPING * i.velocity.x) *
-          float(deltaTime);
-      i.velocity.x += deltaVelocity;
-    }
-
-    if (i.position.x > CEILING_CONSTRAINT) {
-      auto deltaVelocity =
-          (SPRING_CONSTANT * (i.position.x - CEILING_CONSTRAINT) +
-           DAMPING * i.velocity.x) *
-          float(deltaTime);
-      i.velocity.x -= deltaVelocity;
-    }
-    if (i.position.y < FLOOR_CONSTRAINT) {
-      auto deltaVelocity =
-          (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i.position.y) +
-           DAMPING * i.velocity.y) *
-          float(deltaTime);
-      i.velocity.y += deltaVelocity;
-    }
-
-    if (i.position.y > CEILING_CONSTRAINT) {
-      auto deltaVelocity =
-          (SPRING_CONSTANT * (i.position.y - CEILING_CONSTRAINT) +
-           DAMPING * i.velocity.y) *
-          float(deltaTime);
-      i.velocity.y -= deltaVelocity;
-    }
-    if (i.position.z < FLOOR_CONSTRAINT) {
-      auto deltaVelocity =
-          (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i.position.z) +
-           DAMPING * i.velocity.z) *
-          float(deltaTime);
-      i.velocity.z += deltaVelocity;
-    }
-
-    if (i.position.z > CEILING_CONSTRAINT) {
-      auto deltaVelocity =
-          (SPRING_CONSTANT * (i.position.z - CEILING_CONSTRAINT) +
-           DAMPING * i.velocity.z) *
-          float(deltaTime);
-      i.velocity.z -= deltaVelocity;
-    }
-  }
-}
 std::vector<MarchingCubes::Triangle> SPHSimulator::extractSurface() {
   MarchingCubes marchingCubes;
   return marchingCubes.march(colorField, SPHSimulatorConstants::SURFACE_LEVEL);
