@@ -13,12 +13,12 @@ namespace slime {
 
 struct Particle {
   int id;
-  glm::vec3 position, velocity, acceleration;
+  float3 position, velocity, acceleration;
   float density, pressure, mass;
-  glm::vec4 color;
+  float4 color;
   float life;
 
-  bool operator==(const Particle &p) { return this->id == p.id; }
+  __host__ __device__ bool operator==(const Particle &p) { return this->id == p.id; }
 };
 
 class SPHSimulator {
@@ -30,20 +30,8 @@ public:
   void updateScalarField();
   void updateParticles(double deltaTime);
 
-  float poly6Kernel(glm::vec3 r, float h);
-  float spikyKernel(glm::vec3 r, float h);
-  float gradientSpikyKernel(glm::vec3 r, float h);
-  float viscosityKernel(glm::vec3 r, float h);
-  float laplacianViscosityKernel(glm::vec3 r, float h);
-
-  void computeDensity();
-  void computePressureForce(double deltaTime);
-  void computeViscosityForce(double deltaTime);
-  void computeGravity(double deltaTime);
-  void computeWallConstraint(double deltaTime);
-
   std::vector<MarchingCubes::Triangle> extractSurface();
-  std::vector<glm::vec3> extractParticlePositions();
+  std::vector<float> extractParticlePositions();
 
 private:
   std::vector<Particle> particles;

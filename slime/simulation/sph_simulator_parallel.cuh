@@ -3,14 +3,15 @@
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "sph_simulator.cuh"
 
 namespace slime {
-extern __device__ float poly6KernelDevice(glm::vec3 r, float h);
-extern __device__ float spikyKernelDevice(glm::vec3 r, float h);
-extern __device__ float gradientSpikyKernelDevice(glm::vec3 r, float h);
-extern __device__ float viscosityKernelDevice(glm::vec3 r, float h);
-extern __device__ float laplacianViscosityKernelDevice(glm::vec3 r, float h);
+extern __device__ float poly6KernelDevice(float3 r, float h);
+extern __device__ float spikyKernelDevice(float3 r, float h);
+extern __device__ float gradientSpikyKernelDevice(float3 r, float h);
+extern __device__ float viscosityKernelDevice(float3 r, float h);
+extern __device__ float laplacianViscosityKernelDevice(float3 r, float h);
 
 extern __global__ void updateScalarFieldDevice(float *colorFieldDevice,
                                                Particle *particlesDevice,
@@ -32,6 +33,6 @@ extern __global__ void computeGravityDevice(Particle *particlesDevice,
 extern __global__ void computeWallConstraintDevice(Particle *particlesDevice,
                                                    double deltaTime);
 
-extern __global__ void computePositionParallel(Particle *particlesDevice,
-                                               double deltaTime)
+extern __global__ void computePositionParallel(Particle* particlesDevice,
+    double deltaTime);
 } // namespace slime
