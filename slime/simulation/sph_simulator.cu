@@ -47,13 +47,9 @@ SPHSimulator::~SPHSimulator() {
 
 void SPHSimulator::updateParticles(double deltaTime) {
 
-    const int threadSize = 128;
+    const int threadSize = 32;
     const int blockSize = (SPHSimulatorConstants::NUM_PARTICLES + threadSize - 1) / threadSize;
   computeDensityDevice<<<blockSize, threadSize>>>(particlesDevice);
-  cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess) {
-      printf("CUDA error: %s\n", cudaGetErrorString(err));
-  }
   cudaDeviceSynchronize();
 
   computePressureDevice<<<blockSize, threadSize >>>(
@@ -82,17 +78,23 @@ void SPHSimulator::updateParticles(double deltaTime) {
 }
 
 void SPHSimulator::updateScalarField() {
-  dim3 dimBlock(1, 1, 1);
-  dim3 dimGrid(GRID_SIZE, GRID_SIZE, GRID_SIZE); // need to be updated
-  updateScalarFieldDevice<<<dimBlock, dimGrid>>>(colorFieldDevice,
+    int threadSize = 8;
+    dim3 dimBlock(threadSize, threadSize, threadSize);
+    int blockSize = (GRID_SIZE + threadSize - 1) / threadSize;
+    dim3 dimGrid(blockSize, blockSize, blockSize);
+  updateScalarFieldDevice<<<dimGrid, dimBlock>>>(colorFieldDevice,
                                                  particlesDevice, GRID_SIZE);
+  cudaError_t err = cudaGetLastError();
+  if (err != cudaSuccess) {
+      printf("CUDA error2: %s\n", cudaGetErrorString(err));
+  }
   cudaDeviceSynchronize();
   cudaMemcpy(colorField, colorFieldDevice,
              sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE,
              cudaMemcpyDeviceToHost);
 }
 
-std::vector<MarchingCubes::Triangle> SPHSimulator::extractSurface() {
+std::vector<glm::vec3> SPHSimulator::extractSurface() {
   MarchingCubes marchingCubes;
   return marchingCubes.march(colorField, SPHSimulatorConstants::SURFACE_LEVEL);
 }

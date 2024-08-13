@@ -36,10 +36,10 @@ public:
   }
 
   template <size_t X, size_t Y, size_t Z>
-  std::vector<MarchingCubes::Triangle> march(float (&scalarField)[X][Y][Z],
+  std::vector<glm::vec3> march(float (&scalarField)[X][Y][Z],
                                              float surfaceLevel) {
 
-    std::vector<MarchingCubes::Triangle> triangles;
+    std::vector<glm::vec3> vertices;
 
     /* verify if the vertex order is correct */
     const int8_t diff[8][3] = {{0, 0, 0}, {1, 0, 0}, {1, 0, 1}, {0, 0, 1},
@@ -63,6 +63,8 @@ public:
 
           uint8_t tableKey = 0;
           for (int i = 0; i < 8; i++) {
+
+            //std::cout << scalarField[x + diff[i][0]][y + diff[i][1]][z + diff[i][2]] << std::endl;
             if (scalarField[x + diff[i][0]][y + diff[i][1]][z + diff[i][2]] <
                 surfaceLevel) { // correct?
               tableKey |= 1 << i;
@@ -72,38 +74,40 @@ public:
           std::copy(MarchingCubesTables::triangulation[tableKey],
                     MarchingCubesTables::triangulation[tableKey] + 16, edges);
 
-          for (int i = 0; i < 16; i += 3) {
+          for (int i = 0; i < 16; i+=3) {
             if (edges[i] == -1)
               continue;
-            MarchingCubes::Triangle triangle;
-            triangle.v1 = interpolateVertices(
+            glm::vec3 v1 = interpolateVertices(
                 scalarField, surfaceLevel,
                 cubeVertexCoordInt
                     [MarchingCubesTables::cornerIndexFromEdge[edges[i]][0]],
                 cubeVertexCoordInt
                     [MarchingCubesTables::cornerIndexFromEdge[edges[i]][1]]);
-            triangle.v2 = interpolateVertices(
-                scalarField, surfaceLevel,
-                cubeVertexCoordInt
-                    [MarchingCubesTables::cornerIndexFromEdge[edges[i + 1]][0]],
-                cubeVertexCoordInt[MarchingCubesTables::cornerIndexFromEdge
-                                       [edges[i + 1]][1]]);
-            triangle.v3 = interpolateVertices(
-                scalarField, surfaceLevel,
-                cubeVertexCoordInt
-                    [MarchingCubesTables::cornerIndexFromEdge[edges[i + 2]][0]],
-                cubeVertexCoordInt[MarchingCubesTables::cornerIndexFromEdge
-                                       [edges[i + 2]][1]]);
 
-            triangles.push_back(triangle);
-            // std::cout << "extract surface, triangle.v1[0]: " <<
-            // triangle.v1[0]
-            //           << std::endl;
+
+
+            glm::vec3 v2 = interpolateVertices(
+                scalarField, surfaceLevel,
+                cubeVertexCoordInt
+                [MarchingCubesTables::cornerIndexFromEdge[edges[i+1]][0]],
+                cubeVertexCoordInt
+                [MarchingCubesTables::cornerIndexFromEdge[edges[i+2]][1]]);
+
+            glm::vec3 v3 = interpolateVertices(
+                scalarField, surfaceLevel,
+                cubeVertexCoordInt
+                [MarchingCubesTables::cornerIndexFromEdge[edges[i+3]][0]],
+                cubeVertexCoordInt
+                [MarchingCubesTables::cornerIndexFromEdge[edges[i+3]][1]]);
+
+            vertices.push_back(v1);
+            vertices.push_back(v2);
+            vertices.push_back(v3);
           }
         }
       }
     }
-    return triangles;
+    return vertices;
   }
 };
 } // namespace slime

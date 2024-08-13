@@ -9,7 +9,7 @@ public:
 	static constexpr float REST_DENSITY = 1000.0f;
 	static constexpr float VISCOSITY_COEFFICIENT = 0.1f;
 	static constexpr float SMOOTHING_RADIUS = 1.0f;
-	static constexpr float SURFACE_LEVEL = 0.5f;
+	static constexpr float SURFACE_LEVEL = 0.1f;
 };
 } // namespace slime
 
