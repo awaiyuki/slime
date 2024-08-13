@@ -4,10 +4,9 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
-#include <glm/glm.hpp>
 #include <memory>
 #include <slime/constants/sph_simulator_constants.h>
-#include "marching_cubes.h"
+#include "marching_cubes.cuh"
 
 namespace slime {
 
@@ -18,7 +17,9 @@ struct Particle {
   float4 color;
   float life;
 
-  __host__ __device__ bool operator==(const Particle &p) { return this->id == p.id; }
+  __host__ __device__ bool operator==(const Particle &p) {
+    return this->id == p.id;
+  }
 };
 
 class SPHSimulator {
@@ -37,9 +38,11 @@ private:
   std::vector<Particle> particles;
   Particle *particlesDevice;
 
-  static constexpr int GRID_SIZE = 50;
-  float colorField[GRID_SIZE][GRID_SIZE][GRID_SIZE];
+  static constexpr int GRID_SIZE = 100;
+  float colorField[GRID_SIZE * GRID_SIZE * GRID_SIZE];
   float *colorFieldDevice;
+
+  std::unique_ptr<MarchingCubes> marchingCubes;
 };
 
 } // namespace slime

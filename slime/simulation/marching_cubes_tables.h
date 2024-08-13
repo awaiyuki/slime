@@ -7,11 +7,11 @@
 
 namespace slime {
 struct MarchingCubesTables {
-  static constexpr int8_t cornerIndexFromEdge[12][2] = {
+  static constexpr int cornerIndexFromEdge[12][2] = {
       {0, 1}, {1, 2}, {2, 3}, {3, 0}, {4, 5}, {5, 6},
       {6, 7}, {7, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
 
-  static constexpr int8_t triangulation[256][16] = {
+  static constexpr int triangulation[256][16] = {
       {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
       {0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
       {0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},

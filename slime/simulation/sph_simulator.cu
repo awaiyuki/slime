@@ -28,6 +28,8 @@ SPHSimulator::SPHSimulator() {
     particles.push_back(particle);
   }
 
+  marchingCubes = make_unique<MarchingCubes>(GRID_SIZE);
+
   memset(colorField, 0, sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
 
   cudaMalloc((void **)&particlesDevice,
@@ -47,44 +49,45 @@ SPHSimulator::~SPHSimulator() {
 
 void SPHSimulator::updateParticles(double deltaTime) {
 
-    const int threadSize = 128;
-    const int blockSize = (SPHSimulatorConstants::NUM_PARTICLES + threadSize - 1) / threadSize;
+  const int threadSize = 128;
+  const int blockSize =
+      (SPHSimulatorConstants::NUM_PARTICLES + threadSize - 1) / threadSize;
   computeDensityDevice<<<blockSize, threadSize>>>(particlesDevice);
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess) {
-      printf("CUDA error: %s\n", cudaGetErrorString(err));
+    printf("CUDA error: %s\n", cudaGetErrorString(err));
   }
   cudaDeviceSynchronize();
 
-  computePressureDevice<<<blockSize, threadSize >>>(
-      particlesDevice);
+  computePressureDevice<<<blockSize, threadSize>>>(particlesDevice);
 
-  computePressureForceDevice<<<blockSize, threadSize >>>(
-      particlesDevice, deltaTime);
+  computePressureForceDevice<<<blockSize, threadSize>>>(particlesDevice,
+                                                        deltaTime);
   cudaDeviceSynchronize();
 
-  computeViscosityForceDevice<<<blockSize, threadSize >>>(
-      particlesDevice, deltaTime);
+  computeViscosityForceDevice<<<blockSize, threadSize>>>(particlesDevice,
+                                                         deltaTime);
   cudaDeviceSynchronize();
 
-  computeGravityDevice<<<blockSize, threadSize >>>(
-      particlesDevice, deltaTime);
+  computeGravityDevice<<<blockSize, threadSize>>>(particlesDevice, deltaTime);
   cudaDeviceSynchronize();
 
-  computePositionParallel<<<blockSize, threadSize >>>(
-      particlesDevice, deltaTime);
+  computePositionParallel<<<blockSize, threadSize>>>(particlesDevice,
+                                                     deltaTime);
   cudaDeviceSynchronize();
 
-  computeWallConstraintDevice <<<blockSize, threadSize >>> (
-      particlesDevice, deltaTime);
+  computeWallConstraintDevice<<<blockSize, threadSize>>>(particlesDevice,
+                                                         deltaTime);
   cudaDeviceSynchronize();
-
 }
 
 void SPHSimulator::updateScalarField() {
-  dim3 dimBlock(1, 1, 1);
-  dim3 dimGrid(GRID_SIZE, GRID_SIZE, GRID_SIZE); // need to be updated
-  updateScalarFieldDevice<<<dimBlock, dimGrid>>>(colorFieldDevice,
+
+  const int threadSize = 128;
+  dim3 dimBlock(threadSize, threadSize, threadSize);
+  const int blockSize = (GRID_SIZE + threadSize - 1) / threadSize;
+  dim3 dimGrid(blockSize, blockSize, blockSize);
+  updateScalarFieldDevice<<<dimGrid, dimBlock>>>(colorFieldDevice,
                                                  particlesDevice, GRID_SIZE);
   cudaDeviceSynchronize();
   cudaMemcpy(colorField, colorFieldDevice,
@@ -93,17 +96,16 @@ void SPHSimulator::updateScalarField() {
 }
 
 std::vector<MarchingCubes::Triangle> SPHSimulator::extractSurface() {
-  MarchingCubes marchingCubes;
-  return marchingCubes.march(colorField, SPHSimulatorConstants::SURFACE_LEVEL);
+  return marchingCubes->march(colorField, SPHSimulatorConstants::SURFACE_LEVEL);
 }
 
 std::vector<float> SPHSimulator::extractParticlePositions() {
-  
-    cudaMemcpy(particles.data(), particlesDevice,
-        sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES,
-        cudaMemcpyDeviceToHost);
+
+  cudaMemcpy(particles.data(), particlesDevice,
+             sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES,
+             cudaMemcpyDeviceToHost);
   vector<float> positions;
-  positions.reserve(SPHSimulatorConstants::NUM_PARTICLES*3);
+  positions.reserve(SPHSimulatorConstants::NUM_PARTICLES * 3);
   for (const auto &i : particles) {
     positions.push_back(i.position.x);
     positions.push_back(i.position.y);
