@@ -95,7 +95,7 @@ void SPHSimulator::updateScalarField() {
              cudaMemcpyDeviceToHost);
 }
 
-std::vector<MarchingCubes::Triangle> SPHSimulator::extractSurface() {
+std::vector<glm::vec3> SPHSimulator::extractSurface() {
   return marchingCubes->march(colorField, SPHSimulatorConstants::SURFACE_LEVEL);
 }
 

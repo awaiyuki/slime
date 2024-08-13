@@ -7,6 +7,7 @@
 #include <memory>
 #include <slime/constants/sph_simulator_constants.h>
 #include "marching_cubes.cuh"
+#include <glm/glm.hpp>
 
 namespace slime {
 
@@ -31,7 +32,7 @@ public:
   void updateScalarField();
   void updateParticles(double deltaTime);
 
-  std::vector<MarchingCubes::Triangle> extractSurface();
+  std::vector<glm::vec3> extractSurface();
   std::vector<float> extractParticlePositions();
 
 private:

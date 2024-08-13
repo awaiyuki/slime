@@ -64,24 +64,17 @@ void Slime::render(double deltaTime) {
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * size, positions.data());
   */
 
-  const vector<MarchingCubes::Triangle> triangles = std::move(
-      sphSimulator->extractSurface()); // need to replace Marching::Triangle
-                                       // with another type
+  const vector<MarchingCubes::Triangle> vertices =
+      std::move(sphSimulator->extractSurface());
 
-  const int32_t vertexCount = 3 * triangles.size();
+  const int32_t vertexCount = vertices.size();
   const int32_t size = 3 * vertexCount;
   unique_ptr<float[]> triangleData(new float[size]);
 
   for (uint32_t i = 0; i < triangles.size(); i++) {
-    triangleData[i] = triangles[i].v1[0];
-    triangleData[i + 1] = triangles[i].v1[1];
-    triangleData[i + 2] = triangles[i].v1[2];
-    triangleData[i + 3] = triangles[i].v2[0];
-    triangleData[i + 4] = triangles[i].v2[1];
-    triangleData[i + 5] = triangles[i].v2[2];
-    triangleData[i + 6] = triangles[i].v3[0];
-    triangleData[i + 7] = triangles[i].v3[1];
-    triangleData[i + 8] = triangles[i].v3[2];
+    triangleData[3 * i] = vertices[i].x;
+    triangleData[3 * i + 1] = vertices[i].y;
+    triangleData[3 * i + 2] = vertices[i].z;
   }
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * size, triangleData.get());

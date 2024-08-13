@@ -1,5 +1,4 @@
 #include "marching_cubes_parallel.cuh"
-
 using namespace slime;
 
 __device__ __host__ float3 operator+(const float3 &a, const float3 &b) {
@@ -59,7 +58,7 @@ __device__ float3 slime::interpolateVertices(float *d_scalarField, int gridSize,
 
 __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
                                      float surfaceLevel,
-                                     MarchingCubes::Triangle *d_triangles) {
+                                     glm::vec3 *d_vertices) {
 
   /* verify if the vertex order is correct */
   __shared__ const int diff[8][3] = {{0, 0, 0}, {1, 0, 0}, {1, 0, 1},
@@ -96,22 +95,30 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
   for (int i = 0; i < 16; i += 3) {
     if (edges[i] == -1)
       continue;
-    MarchingCubes::Triangle triangle;
-    triangle.v1 = interpolateVertices(
+    float3 v1Float3 = interpolateVertices(
         d_scalarField, gridSize, surfaceLevel,
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i]][0]],
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i]][1]]);
-    triangle.v2 = interpolateVertices(
+
+    glm::vec3 v1(v1Float3.x, v1Float3.y, v1Float3.z);
+
+    float3 v2Float3 = interpolateVertices(
         d_scalarField, gridSize, surfaceLevel,
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i + 1]][0]],
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i + 1]][1]]);
-    triangle.v3 = interpolateVertices(
+
+    glm::vec3 v2(v2Float3.x, v2Float3.y, v2Float3.z);
+
+    float3 v3Float3 = interpolateVertices(
         d_scalarField, gridSize, surfaceLevel,
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i + 2]][0]],
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i + 2]][1]]);
 
-    d_triangles.push_back(
-        triangle); // replace with fixed-size array + atomic counter
+    glm::vec3 v3(v3Float3.x, v3Float3.y, v3Float3.z);
+
+    d_vertices.push_back(); // replace with fixed-size array + atomic counter
+                            // (incremented by 3)
+
     // std::cout << "extract surface, triangle.v1[0]: " <<
     // triangle.v1[0]
     //           << std::endl;
