@@ -92,7 +92,7 @@ void SPHSimulator::updateScalarField() {
   cudaDeviceSynchronize();
 }
 
-std::vector<glm::vec3> SPHSimulator::extractSurface() {
+VertexData SPHSimulator::extractSurface() {
   return marchingCubes->march(colorFieldDevice,
                               SPHSimulatorConstants::SURFACE_LEVEL);
 }

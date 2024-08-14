@@ -32,7 +32,7 @@ public:
   void updateScalarField();
   void updateParticles(double deltaTime);
 
-  std::vector<glm::vec3> extractSurface();
+  VertexData extractSurface();
   std::vector<float> extractParticlePositions();
 
 private:

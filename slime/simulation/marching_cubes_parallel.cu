@@ -2,49 +2,10 @@
 using namespace slime;
 
 __device__ unsigned int counter = 0;
-
-__device__ __host__ float3 operator+(const float3 &a, const float3 &b) {
-  return make_float3(a.x + b.x, a.y + b.y, a.z + b.z);
-}
-
-__device__ __host__ float3 operator-(const float3 &a, const float3 &b) {
-  return make_float3(a.x - b.x, a.y - b.y, a.z - b.z);
-}
-
-__device__ __host__ float3 operator*(const float &a, const float3 &b) {
-  return make_float3(a * b.x, a * b.y, a * b.z);
-}
-__device__ __host__ float3 operator*(const float3 &b, const float &a) {
-  return make_float3(a * b.x, a * b.y, a * b.z);
-}
-__device__ __host__ float3 operator/(const float3 &b, const float &a) {
-  return make_float3(b.x / a, b.y / a, b.z / a);
-}
-__device__ __host__ inline float3 &operator*=(float3 &a, const float &s) {
-  a.x *= s;
-  a.y *= s;
-  a.z *= s;
-  return a;
-}
-__device__ __host__ inline float3 &operator+=(float3 &a, const float &s) {
-  a.x += s;
-  a.y += s;
-  a.z += s;
-  return a;
-}
-__device__ __host__ inline float3 &operator+=(float3 &a, float3 &b) {
-  a.x += b.x;
-  a.y += b.y;
-  a.z += b.z;
-  return a;
-}
-__device__ __host__ inline float length(float3 &a) {
-  return sqrt(a.x * a.x * +a.y * a.y + a.z * a.z);
-}
-__device__ __host__ inline float3 &normalize(float3 &a) {
-  return a / length(a);
-}
-
+__device__ const int diff[8][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 0, 1 },
+    { 0, 0, 1 }, { 0, 1, 0 }, { 1, 1, 0 },
+    { 1, 1, 1 }, { 0, 1, 1 }
+};
 __device__ float3 slime::interpolateVertices(float *d_scalarField, int gridSize,
                                              float surfaceLevel, int va[3],
                                              int vb[3]) {
@@ -62,10 +23,7 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
                                      float surfaceLevel,
                                      slime::VertexData *d_vertexDataPtr) {
 
-  /* verify if the vertex order is correct */
-  __shared__ const int diff[8][3] = {{0, 0, 0}, {1, 0, 0}, {1, 0, 1},
-                                     {0, 0, 1}, {0, 1, 0}, {1, 1, 0},
-                                     {1, 1, 1}, {0, 1, 1}};
+    
 
   int x = threadIdx.x + blockDim.x * blockIdx.x;
   int y = threadIdx.y + blockDim.x * blockIdx.y;
