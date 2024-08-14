@@ -1,6 +1,8 @@
 #include "marching_cubes_parallel.cuh"
 using namespace slime;
 
+__device__ unsigned int counter = 0;
+
 __device__ __host__ float3 operator+(const float3 &a, const float3 &b) {
   return make_float3(a.x + b.x, a.y + b.y, a.z + b.z);
 }
@@ -58,7 +60,7 @@ __device__ float3 slime::interpolateVertices(float *d_scalarField, int gridSize,
 
 __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
                                      float surfaceLevel,
-                                     glm::vec3 *d_vertices) {
+                                     slime::VertexData *d_vertexDataPtr) {
 
   /* verify if the vertex order is correct */
   __shared__ const int diff[8][3] = {{0, 0, 0}, {1, 0, 0}, {1, 0, 1},
@@ -116,9 +118,12 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
 
     glm::vec3 v3(v3Float3.x, v3Float3.y, v3Float3.z);
 
-    d_vertices.push_back(); // replace with fixed-size array + atomic counter
-                            // (incremented by 3)
+    // Need to correct!
+    d_vertexDataPtr->vertices[counter] = v1;
+    d_vertexDataPtr->vertices[counter + 1] = v2;
+    d_vertexDataPtr->vertices[counter + 2] = v3;
 
+    atomicAdd(&counter, 3);
     // std::cout << "extract surface, triangle.v1[0]: " <<
     // triangle.v1[0]
     //           << std::endl;

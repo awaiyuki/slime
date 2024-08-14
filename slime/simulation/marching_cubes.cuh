@@ -12,21 +12,20 @@
 #include "marching_cubes_parallel.cu"
 
 namespace slime {
+struct VertexData {
+  glm::vec3 *vertices;
+  int size;
+};
 class MarchingCubes {
 private:
-  float *d_scalarField;
   int gridSize;
+  VertexData vertexData, *d_vertexDataPtr;
 
 public:
-  struct Triangle {
-    float3 v1, v2, v3;
-  };
-
-  MarchingCubes(int gridSize);
+  MarchingCubes(int _gridSize);
   ~MarchingCubes();
 
-  std::vector<MarchingCubes::Triangle> march(float *scalarField,
-                                             float surfaceLevel);
+  VertexData march(float *scalarField, float surfaceLevel);
 };
 } // namespace slime
 #endif

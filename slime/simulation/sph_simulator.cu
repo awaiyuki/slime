@@ -90,13 +90,11 @@ void SPHSimulator::updateScalarField() {
   updateScalarFieldDevice<<<dimGrid, dimBlock>>>(colorFieldDevice,
                                                  particlesDevice, GRID_SIZE);
   cudaDeviceSynchronize();
-  cudaMemcpy(colorField, colorFieldDevice,
-             sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE,
-             cudaMemcpyDeviceToHost);
 }
 
 std::vector<glm::vec3> SPHSimulator::extractSurface() {
-  return marchingCubes->march(colorField, SPHSimulatorConstants::SURFACE_LEVEL);
+  return marchingCubes->march(colorFieldDevice,
+                              SPHSimulatorConstants::SURFACE_LEVEL);
 }
 
 std::vector<float> SPHSimulator::extractParticlePositions() {
