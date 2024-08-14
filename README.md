@@ -1,6 +1,11 @@
 # slime
 3D Slime (Viscoelastic Fluid) Simulation using OpenGL
 
+## Features
+- SPH-based Fluid Simulation
+- Simulation Parallelized Using CUDA
+- Surface Extraction using Marching Cubes Algorithm
+
 ## Clone with submodules
 ```bash
 git clone --recursive https://github.com/harutea/slime.git
