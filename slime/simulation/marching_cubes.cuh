@@ -1,5 +1,5 @@
-#ifndef MARCHING_CUBES_H
-#define MARCHING_CUBES_H
+#ifndef MARCHING_CUBES_CUH
+#define MARCHING_CUBES_CUH
 
 #include <cuda.h>
 #include <cuda_runtime.h>

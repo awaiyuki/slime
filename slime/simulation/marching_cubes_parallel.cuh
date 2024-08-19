@@ -1,3 +1,6 @@
+#ifndef MARCHING_CUBES_PARALLEL_CUH
+#define MARCHING_CUBES_PARALLEL_CUH
+
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
@@ -17,3 +20,5 @@ extern __global__ void marchParallel(float *d_scalarField, int gridSize,
                                      slime::VertexData *d_vertexDataPtr);
 
 } // namespace slime
+
+#endif
