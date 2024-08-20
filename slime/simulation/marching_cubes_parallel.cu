@@ -3,6 +3,9 @@
 
 using namespace slime;
 
+__constant__ int slime::d_triangulation[256][16];
+__constant__ int slime::d_cornerIndexFromEdge[12][2];
+
 __device__ unsigned int counter = 0;
 __device__ const int diff[8][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 0, 1 },
     { 0, 0, 1 }, { 0, 1, 0 }, { 1, 1, 0 },

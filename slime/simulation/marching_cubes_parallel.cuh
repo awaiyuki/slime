@@ -63,8 +63,8 @@ namespace slime {
         glm::vec3* vertices;
         int size;
     };
-__constant__ int d_triangulation[256][16];
-__constant__ int d_cornerIndexFromEdge[12][2];
+extern __constant__ int d_triangulation[256][16];
+extern __constant__ int d_cornerIndexFromEdge[12][2];
 
 extern __device__ float3 interpolateVertices(float *d_scalarField, int gridSize,
                                              float surfaceLevel, int va[3],
