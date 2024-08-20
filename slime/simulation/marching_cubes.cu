@@ -11,12 +11,12 @@ __device__ int* d_counter;
 
 MarchingCubes::MarchingCubes(int _gridSize) : gridSize(_gridSize) {
 
-  vertexData.vertices = new glm::vec3[gridSize * gridSize * gridSize];
+  vertexData.vertices = new float3[gridSize * gridSize * gridSize];
   vertexData.size = 0;
 
-  glm::vec3 *d_vertices;
+  float3 *d_vertices;
   cudaMalloc((void **)&d_vertices,
-             sizeof(glm::vec3) * gridSize * gridSize * gridSize);
+             sizeof(float3) * gridSize * gridSize * gridSize);
 
   VertexData d_vertexData;
   d_vertexData.size = 0;
@@ -58,10 +58,10 @@ VertexData MarchingCubes::march(float *d_scalarField, float surfaceLevel) {
   cudaMemcpy(&tempVertexData, d_vertexDataPtr, sizeof(vertexData),
              cudaMemcpyDeviceToHost);
   cudaMemcpy(vertexData.vertices, tempVertexData.vertices,
-             sizeof(glm::vec3) * tempVertexData.size, cudaMemcpyDeviceToHost);
+             sizeof(float3) * tempVertexData.size, cudaMemcpyDeviceToHost);
   vertexData.size = tempVertexData.size;
 
-  cout << vertexData.size << endl;
-  cout << vertexData.vertices[0].x << endl;
+//  cout << vertexData.size << endl;
+  //cout << vertexData.vertices[0].x << endl;
   return vertexData;
 };

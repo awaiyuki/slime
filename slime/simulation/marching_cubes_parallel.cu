@@ -33,8 +33,11 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
   int x = threadIdx.x + blockDim.x * blockIdx.x;
   int y = threadIdx.y + blockDim.y * blockIdx.y;
   int z = threadIdx.z + blockDim.z * blockIdx.z;
-  printf("%f \n",
-      d_scalarField[z * gridSize * gridSize + y * gridSize + x]);
+//  printf("%f \n",
+   //   d_scalarField[z * gridSize * gridSize + y * gridSize + x]);
+
+  if (x >= gridSize - 1 || y >= gridSize - 1 || z >= gridSize - 1)
+      return;
 
   float3 currentPosition = make_float3(x, y, z);
   float3 cubeVertices[8];
@@ -66,26 +69,20 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i]][0]],
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i]][1]]);
 
-    glm::vec3 v1(v1Float3.x, v1Float3.y, v1Float3.z);
-
     float3 v2Float3 = interpolateVertices(
         d_scalarField, gridSize, surfaceLevel,
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i + 1]][0]],
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i + 1]][1]]);
-
-    glm::vec3 v2(v2Float3.x, v2Float3.y, v2Float3.z);
 
     float3 v3Float3 = interpolateVertices(
         d_scalarField, gridSize, surfaceLevel,
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i + 2]][0]],
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i + 2]][1]]);
 
-    glm::vec3 v3(v3Float3.x, v3Float3.y, v3Float3.z);
-
-    // Need to correct!
-    d_vertexDataPtr->vertices[*d_counter] = v1;
-    d_vertexDataPtr->vertices[*d_counter + 1] = v2;
-    d_vertexDataPtr->vertices[*d_counter + 2] = v3;
+    //printf("%d\n", *d_counter);
+    d_vertexDataPtr->vertices[*d_counter] = v1Float3;
+    d_vertexDataPtr->vertices[*d_counter + 1] = v2Float3;
+    d_vertexDataPtr->vertices[*d_counter + 2] = v3Float3;
 
     atomicAdd(d_counter, 3);
     d_vertexDataPtr->size = *d_counter;

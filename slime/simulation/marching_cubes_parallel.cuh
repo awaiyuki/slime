@@ -60,7 +60,7 @@ inline __device__ __host__ float3& normalize(float3& a)
 
 namespace slime {
     struct VertexData {
-        glm::vec3* vertices;
+        float3* vertices;
         int size;
     };
 extern __constant__ int d_triangulation[256][16];

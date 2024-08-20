@@ -54,7 +54,7 @@ void Slime::render(double deltaTime) {
   /* SPH Simulation */
 
   sphSimulator->updateParticles(deltaTime);
-  sphSimulator->updateScalarField();
+
   /*
   const vector <float> positions =
   std::move(sphSimulator->extractParticlePositions()); const int32_t pointCount
@@ -64,14 +64,16 @@ void Slime::render(double deltaTime) {
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * size, positions.data());
   */
 
+  sphSimulator->updateScalarField();
+
   slime::VertexData vertexData = sphSimulator->extractSurface();
   auto vertices = vertexData.vertices;
-  const int32_t vertexCount = vertexData.size;
+  const int vertexCount = vertexData.size;
 
-  const int32_t triangleDataSize = 3 * vertexCount;
+  const int triangleDataSize = 3 * vertexCount;
   unique_ptr<float[]> triangleData(new float[triangleDataSize]);
 
-  for (uint32_t i = 0; i < vertexCount; i++) {
+  for (int i = 0; i < vertexCount; i++) {
     triangleData[3 * i] = vertices[i].x;
     triangleData[3 * i + 1] = vertices[i].y;
     triangleData[3 * i + 2] = vertices[i].z;

@@ -45,7 +45,7 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
   int x = threadIdx.x + blockIdx.x * blockDim.x;
   int y = threadIdx.y + blockIdx.y * blockDim.y;
   int z = threadIdx.z + blockIdx.z * blockDim.z;
-
+  //printf("test\n");
   if (x >= gridSize || y >= gridSize || z >= gridSize)
     return;
 
@@ -65,7 +65,8 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
     //      << endl;
   }
   // cout << "colorQuantity:" << colorQuantity << endl;
-  colorFieldDevice[x * gridSize * gridSize + y * gridSize + z] = colorQuantity;
+  //printf("cq: %f\n", colorQuantity);
+  colorFieldDevice[z * gridSize * gridSize + y * gridSize + x] = colorQuantity;
 }
 
 __global__ void slime::computeDensityDevice(Particle *particlesDevice) {
@@ -161,14 +162,16 @@ __global__ void slime::computeGravityDevice(Particle *particlesDevice,
 __global__ void slime::computeWallConstraintDevice(Particle *particlesDevice,
                                                    double deltaTime) {
 
+  /* TODO: replace with reflection */
+
   /* Spring-Damper Collision */
 
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
   if (idx >= SPHSimulatorConstants::NUM_PARTICLES) return;
   auto &i = particlesDevice[idx];
-  const float FLOOR_CONSTRAINT = -5.0f;
-  const float CEILING_CONSTRAINT = 5.0f;
-  const float SPRING_CONSTANT = 500.0f;
+  const float FLOOR_CONSTRAINT = 0.0f;
+  const float CEILING_CONSTRAINT = 1.0f;
+  const float SPRING_CONSTANT = 10.0f;
   const float DAMPING = 1.0f;
   if (i.position.x < FLOOR_CONSTRAINT) {
     auto deltaVelocity = (SPRING_CONSTANT * (FLOOR_CONSTRAINT - i.position.x) +
