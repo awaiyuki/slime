@@ -1,4 +1,5 @@
 #include "marching_cubes.cuh"
+#include "marching_cubes_tables.h"
 
 #include <bitset>
 #include <iostream>

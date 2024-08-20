@@ -64,7 +64,7 @@ void Slime::render(double deltaTime) {
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * size, positions.data());
   */
 
-  slime::VertexData vertexData = Simulator->extractSurface();
+  slime::VertexData vertexData = sphSimulator->extractSurface();
   auto vertices = vertexData.vertices;
   const int32_t vertexCount = vertexData.size;
 

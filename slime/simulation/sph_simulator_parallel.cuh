@@ -1,3 +1,5 @@
+#ifndef SPH_SIMULATOR_PARALLEL_CUH
+#define SPH_SIMULATOR_PARALLEL_CUH
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -34,3 +36,5 @@ extern __global__ void computeWallConstraintDevice(Particle *particlesDevice,
 extern __global__ void computePositionParallel(Particle *particlesDevice,
                                                double deltaTime);
 } // namespace slime
+
+#endif

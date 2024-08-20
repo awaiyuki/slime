@@ -1,4 +1,6 @@
 #include "marching_cubes_parallel.cuh"
+#include "marching_cubes_tables.h"
+
 using namespace slime;
 
 __device__ unsigned int counter = 0;
@@ -49,8 +51,7 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
       tableKey |= 1 << i;
     }
   }
-  int edges[16];
-  std::copy(d_triangulation[tableKey], d_triangulation[tableKey] + 16, edges);
+  int* edges = d_triangulation[tableKey];
 
   for (int i = 0; i < 16; i += 3) {
     if (edges[i] == -1)

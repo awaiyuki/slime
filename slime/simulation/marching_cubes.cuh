@@ -8,14 +8,10 @@
 #include <algorithm>
 #include <vector>
 #include <iostream>
-#include "marching_cubes_tables.h"
-#include "marching_cubes_parallel.cu"
+#include <glm/glm.hpp>
+#include "marching_cubes_parallel.cuh"
 
 namespace slime {
-struct VertexData {
-  glm::vec3 *vertices;
-  int size;
-};
 class MarchingCubes {
 private:
   int gridSize;
