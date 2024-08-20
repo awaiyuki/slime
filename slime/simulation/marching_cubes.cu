@@ -7,6 +7,8 @@
 using namespace slime;
 using namespace std;
 
+__device__ int* d_counter;
+
 MarchingCubes::MarchingCubes(int _gridSize) : gridSize(_gridSize) {
 
   vertexData.vertices = new glm::vec3[gridSize * gridSize * gridSize];
@@ -37,12 +39,19 @@ VertexData MarchingCubes::march(float *d_scalarField, float surfaceLevel) {
                      MarchingCubesTables::cornerIndexFromEdge,
                      sizeof(int) * 12 * 2);
 
-  const int threadSize = 128;
+  cudaMalloc((void**)&d_counter, sizeof(int));
+  cudaMemset(d_counter, 0, sizeof(int));
+
+  const int threadSize = 8;
   dim3 dimBlock(threadSize, threadSize, threadSize);
   const int blockSize = (gridSize + threadSize - 1) / threadSize;
   dim3 dimGrid(blockSize, blockSize, blockSize);
   marchParallel<<<dimGrid, dimBlock>>>(d_scalarField, gridSize, surfaceLevel,
-                                       d_vertexDataPtr);
+                                       d_vertexDataPtr, d_counter);
+  cudaError_t err = cudaGetLastError();
+  if (err != cudaSuccess) {
+      printf("marchParallel error: %s\n", cudaGetErrorString(err));
+  }
   cudaDeviceSynchronize();
   /* get triangles from device and return */
   VertexData tempVertexData;
@@ -53,6 +62,6 @@ VertexData MarchingCubes::march(float *d_scalarField, float surfaceLevel) {
   vertexData.size = tempVertexData.size;
 
   cout << vertexData.size << endl;
-  cout << vertexData.vertices[0].x;
+  cout << vertexData.vertices[0].x << endl;
   return vertexData;
 };

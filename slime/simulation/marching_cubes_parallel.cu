@@ -6,7 +6,6 @@ using namespace slime;
 __constant__ int slime::d_triangulation[256][16];
 __constant__ int slime::d_cornerIndexFromEdge[12][2];
 
-__device__ unsigned int counter = 0;
 __device__ const int diff[8][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 0, 1 },
     { 0, 0, 1 }, { 0, 1, 0 }, { 1, 1, 0 },
     { 1, 1, 1 }, { 0, 1, 1 }
@@ -19,6 +18,7 @@ __device__ float3 slime::interpolateVertices(float *d_scalarField, int gridSize,
   float scalarB =
       d_scalarField[vb[2] * gridSize * gridSize + vb[1] * gridSize + vb[0]];
   float t = (surfaceLevel - scalarA) / (scalarB - scalarA);
+  //printf("%d %d %f %f %f\n", va[0], vb[0], scalarA, scalarB, t);
   return make_float3(va[0], va[1], va[2]) +
          t * (make_float3(vb[0], vb[1], vb[2]) -
               make_float3(va[0], va[1], va[2]));
@@ -26,13 +26,15 @@ __device__ float3 slime::interpolateVertices(float *d_scalarField, int gridSize,
 
 __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
                                      float surfaceLevel,
-                                     slime::VertexData *d_vertexDataPtr) {
+                                     slime::VertexData *d_vertexDataPtr, int *d_counter) {
 
     
 
   int x = threadIdx.x + blockDim.x * blockIdx.x;
-  int y = threadIdx.y + blockDim.x * blockIdx.y;
-  int z = threadIdx.z + blockDim.x * blockIdx.z;
+  int y = threadIdx.y + blockDim.y * blockIdx.y;
+  int z = threadIdx.z + blockDim.z * blockIdx.z;
+  printf("%f \n",
+      d_scalarField[z * gridSize * gridSize + y * gridSize + x]);
 
   float3 currentPosition = make_float3(x, y, z);
   float3 cubeVertices[8];
@@ -81,11 +83,12 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
     glm::vec3 v3(v3Float3.x, v3Float3.y, v3Float3.z);
 
     // Need to correct!
-    d_vertexDataPtr->vertices[counter] = v1;
-    d_vertexDataPtr->vertices[counter + 1] = v2;
-    d_vertexDataPtr->vertices[counter + 2] = v3;
+    d_vertexDataPtr->vertices[*d_counter] = v1;
+    d_vertexDataPtr->vertices[*d_counter + 1] = v2;
+    d_vertexDataPtr->vertices[*d_counter + 2] = v3;
 
-    atomicAdd(&counter, 3);
+    atomicAdd(d_counter, 3);
+    d_vertexDataPtr->size = *d_counter;
     // std::cout << "extract surface, triangle.v1[0]: " <<
     // triangle.v1[0]
     //           << std::endl;

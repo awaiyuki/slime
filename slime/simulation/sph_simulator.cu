@@ -55,7 +55,7 @@ void SPHSimulator::updateParticles(double deltaTime) {
   computeDensityDevice<<<blockSize, threadSize>>>(particlesDevice);
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess) {
-    printf("CUDA error: %s\n", cudaGetErrorString(err));
+    printf("computeDensity error: %s\n", cudaGetErrorString(err));
   }
   cudaDeviceSynchronize();
 

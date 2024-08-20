@@ -72,7 +72,7 @@ extern __device__ float3 interpolateVertices(float *d_scalarField, int gridSize,
 
 extern __global__ void marchParallel(float *d_scalarField, int gridSize,
                                      float surfaceLevel,
-                                     slime::VertexData *d_vertexDataPtr);
+                                     slime::VertexData *d_vertexDataPtr, int *d_counter);
 
 } // namespace slime
 
