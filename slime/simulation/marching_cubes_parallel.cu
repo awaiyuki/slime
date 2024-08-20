@@ -51,7 +51,7 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
     cubeVertexCoordInt[i][2] = z + diff[i][2];
   }
 
-  uint8_t tableKey = 0;
+  int tableKey = 0;
   for (int i = 0; i < 8; i++) {
     if (d_scalarField[(z + diff[i][2]) * gridSize * gridSize +
                       (y + diff[i][1]) * gridSize + (x + diff[i][0])] <
@@ -80,12 +80,11 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i + 2]][1]]);
 
     //printf("%d\n", *d_counter);
-    d_vertexDataPtr->vertices[*d_counter] = v1Float3;
-    d_vertexDataPtr->vertices[*d_counter + 1] = v2Float3;
-    d_vertexDataPtr->vertices[*d_counter + 2] = v3Float3;
+    const int cellIndex = z * gridSize * gridSize + y * gridSize + x;
+    d_vertexDataPtr->vertices[15 * cellIndex + i] = v1Float3;
+    d_vertexDataPtr->vertices[15 * cellIndex + i + 1] = v2Float3;
+    d_vertexDataPtr->vertices[15 * cellIndex + i + 2] = v3Float3;
 
-    atomicAdd(d_counter, 3);
-    d_vertexDataPtr->size = *d_counter;
     // std::cout << "extract surface, triangle.v1[0]: " <<
     // triangle.v1[0]
     //           << std::endl;
