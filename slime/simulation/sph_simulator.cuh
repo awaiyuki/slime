@@ -39,7 +39,7 @@ private:
   std::vector<Particle> particles;
   Particle *particlesDevice;
 
-  static constexpr int GRID_SIZE = 20;
+  static constexpr int GRID_SIZE = 25;
   float colorField[GRID_SIZE * GRID_SIZE * GRID_SIZE];
   float *colorFieldDevice;
 

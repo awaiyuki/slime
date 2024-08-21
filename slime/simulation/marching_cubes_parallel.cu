@@ -21,7 +21,7 @@ __device__ float3 slime::interpolateVertices(float *d_scalarField, int gridSize,
   //printf("%d %d %f %f %f\n", va[0], vb[0], scalarA, scalarB, t);
   return make_float3(va[0], va[1], va[2]) +
          t * (make_float3(vb[0], vb[1], vb[2]) -
-              make_float3(va[0], va[1], va[2]));
+              make_float3(va[0], va[1], va[2])); // need to normalize scalar field ?
 }
 
 __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
@@ -54,7 +54,7 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
   int tableKey = 0;
   for (int i = 0; i < 8; i++) {
     if (d_scalarField[(z + diff[i][2]) * gridSize * gridSize +
-                      (y + diff[i][1]) * gridSize + (x + diff[i][0])] <
+                      (y + diff[i][1]) * gridSize + (x + diff[i][0])] >=
         surfaceLevel) { // correct?
       tableKey |= 1 << i;
     }

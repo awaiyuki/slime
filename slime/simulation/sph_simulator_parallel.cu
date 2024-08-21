@@ -56,9 +56,10 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
                   static_cast<float>(y) / static_cast<float>(gridSize),
                   static_cast<float>(z) / static_cast<float>(gridSize)) -
         particlesDevice[j].position;
+    if (particlesDevice[j].density < EPSILON) continue;
     colorQuantity +=
         particlesDevice[j].mass * (1.0 / particlesDevice[j].density) *
-        poly6KernelDevice(r, float(SPHSimulatorConstants::SMOOTHING_RADIUS));
+        poly6KernelDevice(r, 2.0 / static_cast<float>(gridSize));
     // cout << "test:"
     //      << poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS) /
     //             j.density
@@ -67,6 +68,14 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
   // cout << "colorQuantity:" << colorQuantity << endl;
   //printf("cq: %f\n", colorQuantity);
   colorFieldDevice[z * gridSize * gridSize + y * gridSize + x] = colorQuantity;
+  // colorFieldDevice[15 * gridSize * gridSize + 15 * gridSize + 15] = 0.7;
+  //colorFieldDevice[15 * gridSize * gridSize + 16 * gridSize + 16] = 0.7;
+  //colorFieldDevice[15 * gridSize * gridSize + 15 * gridSize + 16] = 0.7;
+  //colorFieldDevice[15 * gridSize * gridSize + 16 * gridSize + 15] = 0.7;
+  //colorFieldDevice[16 * gridSize * gridSize + 15 * gridSize + 15] = 0.7;
+  //colorFieldDevice[16 * gridSize * gridSize + 16 * gridSize + 15] = 0.7;
+  //colorFieldDevice[16 * gridSize * gridSize + 15 * gridSize + 16] = 0.7;
+  //colorFieldDevice[16 * gridSize * gridSize + 16 * gridSize + 16] = 0.7;
 }
 
 __global__ void slime::computeDensityDevice(Particle *particlesDevice) {
