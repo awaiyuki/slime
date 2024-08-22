@@ -54,39 +54,32 @@ void Slime::render(double deltaTime) {
   /* SPH Simulation */
 
   sphSimulator->updateParticles(deltaTime);
-  // sphSimulator->updateScalarField();
 
   /*
-  const vector<glm::vec3>& positions = sphSimulator->extractParticlePositions();
-  cout << positions[50].x << ' ' << positions[50].y << ' ' << positions[50].z
-      << endl;
-  const int32_t pointCount = positions.size();
-  const int32_t size = 3 * pointCount;
-  unique_ptr<float[]> pointData(new float[size]);
+  const vector <float> positions =
+  std::move(sphSimulator->extractParticlePositions()); const int32_t pointCount
+  = SPHSimulatorConstants::NUM_PARTICLES; const int32_t size = 3 * pointCount;
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * size, positions.data());
   */
-  const vector<MarchingCubes::Triangle> &triangles =
-      sphSimulator->extractSurface();
 
-  const int32_t vertexCount = 3 * triangles.size();
-  const int32_t size = 3 * vertexCount;
-  unique_ptr<float[]> triangleData(new float[size]);
+  sphSimulator->updateScalarField();
 
-  for (uint32_t i = 0; i < triangles.size(); i++) {
-    triangleData[i] = triangles[i].v1[0];
-    triangleData[i + 1] = triangles[i].v1[1];
-    triangleData[i + 2] = triangles[i].v1[2];
-    triangleData[i + 3] = triangles[i].v2[0];
-    triangleData[i + 4] = triangles[i].v2[1];
-    triangleData[i + 5] = triangles[i].v2[2];
-    triangleData[i + 6] = triangles[i].v3[0];
-    triangleData[i + 7] = triangles[i].v3[1];
-    triangleData[i + 8] = triangles[i].v3[2];
+  slime::VertexData vertexData = sphSimulator->extractSurface();
+  auto vertices = vertexData.vertices;
+  const int vertexCount = vertexData.size;
+
+  const int triangleDataSize = 3 * vertexCount;
+  unique_ptr<float[]> triangleData(new float[triangleDataSize]);
+
+  for (int i = 0; i < vertexCount; i++) {
+    triangleData[3 * i] = vertices[i].x;
+    triangleData[3 * i + 1] = vertices[i].y;
+    triangleData[3 * i + 2] = vertices[i].z;
   }
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * vertexCount,
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * triangleDataSize,
                   triangleData.get());
 
   /* Transform */
@@ -123,9 +116,10 @@ void Slime::render(double deltaTime) {
 
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-  // glDrawArrays(GL_TRIANGLES, 0, vertexCount);
-  glPointSize(25.0f);
-  glDrawArrays(GL_POINTS, 0, pointCount);
+  glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+
+  // glPointSize(15.0f);
+  // glDrawArrays(GL_POINTS, 0, pointCount);
 
   // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
