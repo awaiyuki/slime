@@ -16,6 +16,6 @@ git submodule update --recursive --init
 ```bash
 mkdir build
 cd build
-cmake .. -G "Unix Makefiles"
-make
+cmake ..
+cmake --build . --config Release
 ```
