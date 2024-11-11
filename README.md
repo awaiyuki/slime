@@ -1,5 +1,5 @@
 # slime
-3D Slime (Viscoelastic Fluid) Simulation using OpenGL (on progress)
+3D Slime (Viscoelastic Fluid) Simulation using OpenGL (in progress)
 
 ## Features
 - SPH-based Fluid Simulation
