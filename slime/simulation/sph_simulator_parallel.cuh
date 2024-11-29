@@ -27,6 +27,9 @@ extern __global__ void computePressureForceDevice(Particle *particlesDevice,
 extern __global__ void computeViscosityForceDevice(Particle *particlesDevice,
                                                    double deltaTime);
 
+extern __global__ void computeSurfaceTensionDevice(Particle *particlesDevice,
+                                                   double deltaTime);
+
 extern __global__ void computeGravityDevice(Particle *particlesDevice,
                                             double deltaTime);
 

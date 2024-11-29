@@ -69,6 +69,10 @@ void SPHSimulator::updateParticles(double deltaTime) {
                                                          deltaTime);
   cudaDeviceSynchronize();
 
+  computeSurfaceTensionDevice<<<blockSize, threadSize>>>(particlesDevice,
+                                                         deltaTime);
+  cudaDeviceSynchronize();
+
   /*
   computeSurfaceTensionForce<<<blockSize, threadSize>>>(particlesDevice,
                                                          deltaTime);

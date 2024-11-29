@@ -7,13 +7,12 @@
 
 using namespace slime;
 
-
 __device__ float slime::poly6KernelDevice(float3 r, float h) {
-    float rMagnitude = length(r);
+  float rMagnitude = length(r);
   if (rMagnitude > h)
     return 0.0f;
   float result = 315.0f / (64.0f * PI * pow(h, 9)) *
-      pow(h * h - rMagnitude * rMagnitude, 3);
+                 pow(h * h - rMagnitude * rMagnitude, 3);
   return result;
 }
 
@@ -45,7 +44,7 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
   int x = threadIdx.x + blockIdx.x * blockDim.x;
   int y = threadIdx.y + blockIdx.y * blockDim.y;
   int z = threadIdx.z + blockIdx.z * blockDim.z;
-  //printf("test\n");
+  // printf("test\n");
   if (x >= gridSize || y >= gridSize || z >= gridSize)
     return;
 
@@ -53,35 +52,37 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
   for (int j = 0; j < SPHSimulatorConstants::NUM_PARTICLES; j++) {
     float3 r =
         make_float3(static_cast<float>(x) / static_cast<float>(gridSize),
-                  static_cast<float>(y) / static_cast<float>(gridSize),
-                  static_cast<float>(z) / static_cast<float>(gridSize)) -
+                    static_cast<float>(y) / static_cast<float>(gridSize),
+                    static_cast<float>(z) / static_cast<float>(gridSize)) -
         particlesDevice[j].position;
-    if (particlesDevice[j].density < EPSILON) continue;
-    colorQuantity +=
-        particlesDevice[j].mass * (1.0 / particlesDevice[j].density) *
-        poly6KernelDevice(r, 2.0 / static_cast<float>(gridSize));
+    if (particlesDevice[j].density < EPSILON)
+      continue;
+    colorQuantity += particlesDevice[j].mass *
+                     (1.0 / particlesDevice[j].density) *
+                     poly6KernelDevice(r, 2.0 / static_cast<float>(gridSize));
     // cout << "test:"
     //      << poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS) /
     //             j.density
     //      << endl;
   }
   // cout << "colorQuantity:" << colorQuantity << endl;
-  //printf("cq: %f\n", colorQuantity);
+  // printf("cq: %f\n", colorQuantity);
   colorFieldDevice[z * gridSize * gridSize + y * gridSize + x] = colorQuantity;
   // colorFieldDevice[15 * gridSize * gridSize + 15 * gridSize + 15] = 0.7;
-  //colorFieldDevice[15 * gridSize * gridSize + 16 * gridSize + 16] = 0.7;
-  //colorFieldDevice[15 * gridSize * gridSize + 15 * gridSize + 16] = 0.7;
-  //colorFieldDevice[15 * gridSize * gridSize + 16 * gridSize + 15] = 0.7;
-  //colorFieldDevice[16 * gridSize * gridSize + 15 * gridSize + 15] = 0.7;
-  //colorFieldDevice[16 * gridSize * gridSize + 16 * gridSize + 15] = 0.7;
-  //colorFieldDevice[16 * gridSize * gridSize + 15 * gridSize + 16] = 0.7;
-  //colorFieldDevice[16 * gridSize * gridSize + 16 * gridSize + 16] = 0.7;
+  // colorFieldDevice[15 * gridSize * gridSize + 16 * gridSize + 16] = 0.7;
+  // colorFieldDevice[15 * gridSize * gridSize + 15 * gridSize + 16] = 0.7;
+  // colorFieldDevice[15 * gridSize * gridSize + 16 * gridSize + 15] = 0.7;
+  // colorFieldDevice[16 * gridSize * gridSize + 15 * gridSize + 15] = 0.7;
+  // colorFieldDevice[16 * gridSize * gridSize + 16 * gridSize + 15] = 0.7;
+  // colorFieldDevice[16 * gridSize * gridSize + 15 * gridSize + 16] = 0.7;
+  // colorFieldDevice[16 * gridSize * gridSize + 16 * gridSize + 16] = 0.7;
 }
 
 __global__ void slime::computeDensityDevice(Particle *particlesDevice) {
-  
+
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES) return;
+  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+    return;
   auto &i = particlesDevice[idx];
 
   i.density = 0.0f;
@@ -94,13 +95,13 @@ __global__ void slime::computeDensityDevice(Particle *particlesDevice) {
     auto r = j.position - i.position;
     i.density +=
         j.mass * poly6KernelDevice(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
-
   }
 }
 
 __global__ void slime::computePressureDevice(Particle *particlesDevice) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES) return;
+  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+    return;
   auto &i = particlesDevice[idx];
   i.pressure = SPHSimulatorConstants::GAS_CONSTANT *
                (i.density - SPHSimulatorConstants::REST_DENSITY);
@@ -108,7 +109,8 @@ __global__ void slime::computePressureDevice(Particle *particlesDevice) {
 __global__ void slime::computePressureForceDevice(Particle *particlesDevice,
                                                   double deltaTime) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES) return;
+  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+    return;
   auto &i = particlesDevice[idx];
 
   float3 pressureForce = make_float3(0.0f, 0.0f, 0.0f);
@@ -123,7 +125,7 @@ __global__ void slime::computePressureForceDevice(Particle *particlesDevice,
 
     auto r = j.position - i.position;
     pressureForce +=
-        (-1)* normalize(r)* j.mass* (i.pressure + j.pressure) /
+        (-1) * normalize(r) * j.mass * (i.pressure + j.pressure) /
         (2.0f * j.density) *
         gradientSpikyKernelDevice(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
   }
@@ -135,7 +137,8 @@ __global__ void slime::computePressureForceDevice(Particle *particlesDevice,
 __global__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
                                                    double deltaTime) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES) return;
+  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+    return;
   auto &i = particlesDevice[idx];
   float3 viscosityForce = make_float3(0.0f, 0.0f, 0.0f);
   for (int idx_j = 0; idx_j < SPHSimulatorConstants::NUM_PARTICLES; idx_j++) {
@@ -158,10 +161,23 @@ __global__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
   i.velocity += deltaVelocity;
 }
 
+__global__ void slime::computeSurfaceTensionDevice(Particle *particlesDevice,
+                                                   double deltaTime) {
+  int idx = threadIdx.x + blockDim.x * blockIdx.x;
+  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+    return;
+  auto &i = particlesDevice[idx];
+
+  // TODO: implement surface tension
+
+  return;
+}
+
 __global__ void slime::computeGravityDevice(Particle *particlesDevice,
                                             double deltaTime) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES) return;
+  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+    return;
   auto &i = particlesDevice[idx];
   auto acceleration = make_float3(0, -0.098f, 0);
   auto deltaVelocity = acceleration * float(deltaTime);
@@ -176,7 +192,8 @@ __global__ void slime::computeWallConstraintDevice(Particle *particlesDevice,
   /* Spring-Damper Collision */
 
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES) return;
+  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+    return;
   auto &i = particlesDevice[idx];
   const float FLOOR_CONSTRAINT = 0.0f;
   const float CEILING_CONSTRAINT = 1.0f;
@@ -226,10 +243,11 @@ __global__ void slime::computeWallConstraintDevice(Particle *particlesDevice,
   }
 }
 
-__global__ void slime::computePositionParallel(Particle* particlesDevice,
-    double deltaTime) {
-    int idx = threadIdx.x + blockDim.x * blockIdx.x;
-    if (idx >= SPHSimulatorConstants::NUM_PARTICLES) return;
-    auto& i = particlesDevice[idx];
-    i.position += i.velocity * static_cast<float>(deltaTime);
+__global__ void slime::computePositionParallel(Particle *particlesDevice,
+                                               double deltaTime) {
+  int idx = threadIdx.x + blockDim.x * blockIdx.x;
+  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+    return;
+  auto &i = particlesDevice[idx];
+  i.position += i.velocity * static_cast<float>(deltaTime);
 }
