@@ -1,5 +1,5 @@
-#ifndef SPH_SIMULATOR_PARALLEL_CUH
-#define SPH_SIMULATOR_PARALLEL_CUH
+#ifndef SPH_SIMULATOR_DEVICE_CUH
+#define SPH_SIMULATOR_DEVICE_CUH
 
 #include <cuda.h>
 #include <cuda_runtime.h>

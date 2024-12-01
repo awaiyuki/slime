@@ -1,6 +1,6 @@
 
 #include "sph_simulator.cuh"
-#include "sph_simulator_parallel.cuh"
+#include "sph_simulator_device.cuh"
 #include <cstring>
 #include <random>
 #include <iostream>

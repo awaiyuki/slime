@@ -9,7 +9,7 @@
 #include <vector>
 #include <iostream>
 #include <glm/glm.hpp>
-#include "marching_cubes_parallel.cuh"
+#include "marching_cubes_device.cuh"
 
 namespace slime {
 class MarchingCubes {
