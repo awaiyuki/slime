@@ -3,8 +3,8 @@
 
 ## Features
 - SPH-based Fluid Simulation
-- Simulation Parallelized Using CUDA
 - Surface Extraction using Marching Cubes Algorithm
+- Parallelized Using CUDA
 
 ## Clone with submodules
 ```bash
