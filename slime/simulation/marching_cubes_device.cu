@@ -62,8 +62,14 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
   int *edges = d_triangulation[tableKey];
 
   for (int i = 0; i < 16; i += 3) {
-    if (edges[i] == -1)
-      continue;
+      if (edges[i] == -1) {
+          // temporary solution
+          const int cellIndex = z * gridSize * gridSize + y * gridSize + x;
+          d_vertexDataPtr->vertices[15 * cellIndex + i] = make_float3(0.0f, 0.0f, 0.0f);
+          d_vertexDataPtr->vertices[15 * cellIndex + i + 1] = make_float3(0.0f, 0.0f, 0.0f);
+          d_vertexDataPtr->vertices[15 * cellIndex + i + 2] = make_float3(0.0f, 0.0f, 0.0f);
+          continue;
+      }
     float3 v1Float3 = interpolateVertices(
         d_scalarField, gridSize, surfaceLevel,
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i]][0]],
@@ -79,6 +85,7 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i + 2]][0]],
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i + 2]][1]]);
 
+    atomicAdd(d_counter, 3);
     // printf("%d\n", *d_counter);
     const int cellIndex = z * gridSize * gridSize + y * gridSize + x;
     d_vertexDataPtr->vertices[15 * cellIndex + i] = v1Float3;

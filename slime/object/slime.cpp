@@ -70,7 +70,7 @@ void Slime::render(double deltaTime) {
   slime::VertexData vertexData = sphSimulator->extractSurface();
   auto vertices = vertexData.vertices;
   const int vertexCount = vertexData.size;
-
+  cout << "vertexCount: "<<vertexCount << endl;
   const int triangleDataSize = 3 * vertexCount;
   unique_ptr<float[]> triangleData(new float[triangleDataSize]);
 
