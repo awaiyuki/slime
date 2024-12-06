@@ -7,6 +7,7 @@
 #include "sph_simulator.cuh"
 
 namespace slime {
+    extern float poly6Kernel(glm::vec3 r, float h);
 extern __device__ float poly6KernelDevice(float3 r, float h);
 extern __device__ float spikyKernelDevice(float3 r, float h);
 extern __device__ float gradientSpikyKernelDevice(float3 r, float h);
@@ -15,7 +16,7 @@ extern __device__ float laplacianViscosityKernelDevice(float3 r, float h);
 
 extern __global__ void updateScalarFieldDevice(float *colorFieldDevice,
                                                Particle *particlesDevice,
-                                               int gridSize);
+                                               int gridSize, float maxColorQuantity);
 
 extern __global__ void computeDensityDevice(Particle *particlesDevice);
 

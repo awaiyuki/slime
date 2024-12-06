@@ -15,6 +15,8 @@ namespace slime {
 class MarchingCubes {
 private:
   int gridSize;
+
+  float3* d_vertices;
   VertexData vertexData, *d_vertexDataPtr;
 
 public:

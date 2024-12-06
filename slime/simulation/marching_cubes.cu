@@ -17,13 +17,13 @@ MarchingCubes::MarchingCubes(int _gridSize) : gridSize(_gridSize) {
   float3 *d_vertices;
   cudaMalloc((void **)&d_vertices,
              sizeof(float3) * gridSize * gridSize * gridSize * 15);
-
-  VertexData d_vertexData;
-  d_vertexData.size = 0;
-  d_vertexData.vertices = d_vertices;
-  cudaMalloc((void **)&d_vertexDataPtr, sizeof(VertexData));
-  cudaMemcpy(d_vertexDataPtr, &d_vertexData, sizeof(VertexData),
-             cudaMemcpyHostToDevice);
+  VertexData vertexData;
+  vertexData.size = 0;
+  vertexData.vertices = d_vertices;
+  cudaMalloc((void**)&d_vertexDataPtr, sizeof(VertexData));
+  cudaMemcpy(d_vertexDataPtr, &vertexData, sizeof(VertexData),
+      cudaMemcpyHostToDevice);
+  
 }
 
 MarchingCubes::~MarchingCubes() {
@@ -46,6 +46,8 @@ VertexData MarchingCubes::march(float *d_scalarField, float surfaceLevel) {
   dim3 dimBlock(threadSize, threadSize, threadSize);
   const int blockSize = (gridSize + threadSize - 1) / threadSize;
   dim3 dimGrid(blockSize, blockSize, blockSize);
+  
+  // cudaMemset(d_vertexDataPtr->vertices, 0.0, sizeof(float3) * gridSize * gridSize * gridSize * 15);
   marchParallel<<<dimGrid, dimBlock>>>(d_scalarField, gridSize, surfaceLevel,
                                        d_vertexDataPtr, d_counter);
   cudaError_t err = cudaGetLastError();

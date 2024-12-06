@@ -1,16 +1,26 @@
 #include "sph_simulator_device.cuh"
 #include <slime/constants/sph_simulator_constants.h>
 #include <math.h>
-
 #define PI 3.141592653589793238462643
 #define EPSILON 0.000001
 
 using namespace slime;
 
-__device__ float slime::poly6KernelDevice(float3 r, float h) {
+float slime::poly6Kernel(glm::vec3 r, float h) {
+    float rMagnitude = glm::length(r);
+    if (rMagnitude > h)
+        return 0.0f;
+
+    float result = 315.0f / (64.0f * PI * glm::pow(h, 9)) *
+        glm::pow(h * h - rMagnitude * rMagnitude, 3);
+    return result;
+}
+
+__host__ __device__ float slime::poly6KernelDevice(float3 r, float h) {
   float rMagnitude = length(r);
   if (rMagnitude > h)
     return 0.0f;
+  
   float result = 315.0f / (64.0f * PI * pow(h, 9)) *
                  pow(h * h - rMagnitude * rMagnitude, 3);
   return result;
@@ -40,7 +50,7 @@ __device__ float slime::laplacianViscosityKernelDevice(float3 r, float h) {
 
 __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
                                                Particle *particlesDevice,
-                                               int gridSize) {
+                                               int gridSize, float maxColorQuantity) {
   int x = threadIdx.x + blockIdx.x * blockDim.x;
   int y = threadIdx.y + blockIdx.y * blockDim.y;
   int z = threadIdx.z + blockIdx.z * blockDim.z;
@@ -60,13 +70,13 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
     colorQuantity += particlesDevice[j].mass *
                      (1.0 / particlesDevice[j].density) *
                      poly6KernelDevice(r, 2.0 / static_cast<float>(gridSize));
-    // densityQuantity += particlesDevice[j].mass *
-    //                  poly6KernelDevice(r, 2.0 /
-    //                  static_cast<float>(gridSize));
   }
   // cout << "colorQuantity:" << colorQuantity << endl;
-  // printf("cq: %f\n", colorQuantity);
-  colorFieldDevice[z * gridSize * gridSize + y * gridSize + x] = colorQuantity;
+//  printf("cq: %f\n", colorQuantity / maxColorQuantity);
+  colorFieldDevice[z * gridSize * gridSize + y * gridSize + x] = colorQuantity / maxColorQuantity;
+
+
+  /* Test */
   // colorFieldDevice[15 * gridSize * gridSize + 15 * gridSize + 15] = 0.7;
   // colorFieldDevice[15 * gridSize * gridSize + 16 * gridSize + 16] = 0.7;
   // colorFieldDevice[15 * gridSize * gridSize + 15 * gridSize + 16] = 0.7;

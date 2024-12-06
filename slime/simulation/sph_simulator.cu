@@ -4,7 +4,7 @@
 #include <cstring>
 #include <random>
 #include <iostream>
-
+#include <stdio.h>
 using namespace slime;
 using namespace std;
 
@@ -97,8 +97,9 @@ void SPHSimulator::updateScalarField() {
   dim3 dimBlock(threadSize, threadSize, threadSize);
   const int blockSize = (GRID_SIZE + threadSize - 1) / threadSize;
   dim3 dimGrid(blockSize, blockSize, blockSize);
+  
   updateScalarFieldDevice<<<dimGrid, dimBlock>>>(colorFieldDevice,
-                                                 particlesDevice, GRID_SIZE);
+                                                 particlesDevice, GRID_SIZE, 1954.0);
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess) {
     printf("updateScalarFieldDevice error: %s\n", cudaGetErrorString(err));

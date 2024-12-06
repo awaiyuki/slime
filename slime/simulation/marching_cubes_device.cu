@@ -1,6 +1,6 @@
 #include "marching_cubes_device.cuh"
 #include "marching_cubes_tables.h"
-
+#include <stdio.h>
 using namespace slime;
 
 __constant__ int slime::d_triangulation[256][16];
@@ -15,12 +15,13 @@ __device__ float3 slime::interpolateVertices(float *d_scalarField, int gridSize,
       d_scalarField[va[2] * gridSize * gridSize + va[1] * gridSize + va[0]];
   float scalarB =
       d_scalarField[vb[2] * gridSize * gridSize + vb[1] * gridSize + vb[0]];
+  float scale = 1.0f / gridSize;
   float t = (surfaceLevel - scalarA) / (scalarB - scalarA);
   // printf("%d %d %f %f %f\n", va[0], vb[0], scalarA, scalarB, t);
-  return make_float3(va[0], va[1], va[2]) +
+  return (make_float3(va[0], va[1], va[2]) +
          t * (make_float3(vb[0], vb[1], vb[2]) -
               make_float3(va[0], va[1],
-                          va[2])); // need to normalize scalar field ?
+                          va[2])) ) * scale;
 }
 
 __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
@@ -36,7 +37,6 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
 
   if (x >= gridSize - 1 || y >= gridSize - 1 || z >= gridSize - 1)
     return;
-
   float3 currentPosition = make_float3(x, y, z);
   float3 cubeVertices[8];
   int cubeVertexCoordInt[8][3];
@@ -52,11 +52,13 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
   int tableKey = 0;
   for (int i = 0; i < 8; i++) {
     if (d_scalarField[(z + diff[i][2]) * gridSize * gridSize +
-                      (y + diff[i][1]) * gridSize + (x + diff[i][0])] >=
-        surfaceLevel) { // correct?
+                      (y + diff[i][1]) * gridSize + (x + diff[i][0])] >
+        surfaceLevel) {
       tableKey |= 1 << i;
     }
   }
+
+
   int *edges = d_triangulation[tableKey];
 
   for (int i = 0; i < 16; i += 3) {
