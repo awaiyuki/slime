@@ -54,17 +54,16 @@ void Slime::render(double deltaTime) {
   /* SPH Simulation */
 
   sphSimulator->updateParticles(deltaTime);
-
-  // Render with points
-  const vector<float> positions =
-      std::move(sphSimulator->extractParticlePositions());
-  const int32_t pointCount = SPHSimulatorConstants::NUM_PARTICLES;
-  const int32_t size = 3 * pointCount;
-
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * size, positions.data());
-
   /*
+    // Render with points
+    const vector<float> positions =
+        std::move(sphSimulator->extractParticlePositions());
+    const int32_t pointCount = SPHSimulatorConstants::NUM_PARTICLES;
+    const int32_t size = 3 * pointCount;
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * size, positions.data());
+  */
   // Render with triangles
   sphSimulator->updateScalarField();
 
@@ -83,8 +82,6 @@ void Slime::render(double deltaTime) {
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * triangleDataSize,
                   triangleData.get());
-
-  */
 
   /* Transform */
   shader->use();
@@ -120,10 +117,10 @@ void Slime::render(double deltaTime) {
 
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-  // glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+  glDrawArrays(GL_TRIANGLES, 0, vertexCount);
 
-  glPointSize(15.0f);
-  glDrawArrays(GL_POINTS, 0, pointCount);
+  // glPointSize(15.0f);
+  // glDrawArrays(GL_POINTS, 0, pointCount);
 
   // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }

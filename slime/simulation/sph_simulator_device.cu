@@ -1,4 +1,4 @@
-#include "sph_simulator_parallel.cuh"
+#include "sph_simulator_device.cuh"
 #include <slime/constants/sph_simulator_constants.h>
 #include <math.h>
 
@@ -60,10 +60,9 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
     colorQuantity += particlesDevice[j].mass *
                      (1.0 / particlesDevice[j].density) *
                      poly6KernelDevice(r, 2.0 / static_cast<float>(gridSize));
-    // cout << "test:"
-    //      << poly6Kernel(r, SPHSimulatorConstants::SMOOTHING_RADIUS) /
-    //             j.density
-    //      << endl;
+    // densityQuantity += particlesDevice[j].mass *
+    //                  poly6KernelDevice(r, 2.0 /
+    //                  static_cast<float>(gridSize));
   }
   // cout << "colorQuantity:" << colorQuantity << endl;
   // printf("cq: %f\n", colorQuantity);
@@ -89,7 +88,7 @@ __global__ void slime::computeDensityDevice(Particle *particlesDevice) {
   for (int idx_j = 0; idx_j < SPHSimulatorConstants::NUM_PARTICLES; idx_j++) {
     auto &j = particlesDevice[idx_j];
 
-    if (i == j)
+    if (idx == idx_j)
       continue;
 
     auto r = j.position - i.position;
@@ -117,7 +116,7 @@ __global__ void slime::computePressureForceDevice(Particle *particlesDevice,
   for (int idx_j = 0; idx_j < SPHSimulatorConstants::NUM_PARTICLES; idx_j++) {
     auto &j = particlesDevice[idx_j];
 
-    if (i == j)
+    if (idx == idx_j)
       continue;
 
     if (j.density < EPSILON)
@@ -143,7 +142,7 @@ __global__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
   float3 viscosityForce = make_float3(0.0f, 0.0f, 0.0f);
   for (int idx_j = 0; idx_j < SPHSimulatorConstants::NUM_PARTICLES; idx_j++) {
     auto &j = particlesDevice[idx_j];
-    if (i == j)
+    if (idx == idx_j)
       continue;
 
     if (j.density < EPSILON)
