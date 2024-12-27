@@ -70,7 +70,7 @@ VertexData MarchingCubes::march(float *d_scalarField, float surfaceLevel) {
   cudaMemcpy(vertexData.vertices, tempVertexData.vertices,
              sizeof(float3) * gridSize * gridSize * gridSize * 15, cudaMemcpyDeviceToHost);
   vertexData.size = gridSize * gridSize * gridSize * 15;
-  // cudaMemcpy(&vertexData.size, d_counter, sizeof(int), cudaMemcpyDeviceToHost);
+//   cudaMemcpy(&vertexData.size, d_counter, sizeof(int), cudaMemcpyDeviceToHost);
   cout << vertexData.size << endl;
   //cout << vertexData.vertices[0].x << endl;
   return vertexData;

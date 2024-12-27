@@ -29,9 +29,11 @@ Slime::~Slime() {}
 
 void Slime::setup() {
   cout << "setup Slime" << endl;
+  this->renderMode="point";
   this->shader = new Shader("./shaders/slime.vert", "./shaders/slime.frag");
   this->sphSimulator = make_unique<SPHSimulator>();
   shader->use();
+
 
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
@@ -54,7 +56,8 @@ void Slime::render(double deltaTime) {
   /* SPH Simulation */
 
   sphSimulator->updateParticles(deltaTime);
-  /*
+  if(renderMode == "point") {
+  
     // Render with points
     const vector<float> positions =
         std::move(sphSimulator->extractParticlePositions());
@@ -63,7 +66,41 @@ void Slime::render(double deltaTime) {
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * size, positions.data());
-  */
+  /* Transform */
+  shader->use();
+
+  glm::mat4 model = glm::mat4(1.0f);
+
+  model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+  model = glm::translate(model, glm::vec3(initX, initY, initZ));
+
+  glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+
+  glm::vec3 lightPos(1.1f, 3.0f, 2.0f);
+  glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+  glm::vec3 objectColor(0.1f, 1.0f, 0.3f);
+  shader->setVec3("lightPos", lightPos);
+  shader->setVec3("viewPos", cameraPosition);
+  shader->setVec3("lightColor", lightColor);
+  shader->setVec3("objectColor", objectColor);
+  shader->setFloat("time", glfwGetTime());
+
+  int modelLoc = glGetUniformLocation(shader->getID(), "model");
+  glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+  int normalMatrixLoc = glGetUniformLocation(shader->getID(), "normalMatrix");
+  glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE,
+                     glm::value_ptr(normalMatrix));
+  int viewLoc = glGetUniformLocation(shader->getID(), "view");
+  glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+  int projectionLoc = glGetUniformLocation(shader->getID(), "projection");
+  glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+  /* Draw */
+  glBindVertexArray(VAO);
+  glPointSize(15.0f);
+  glDrawArrays(GL_POINTS, 0, pointCount);
+  }
+  else {
   // Render with triangles
   sphSimulator->updateScalarField();
 
@@ -119,10 +156,9 @@ void Slime::render(double deltaTime) {
 
   glDrawArrays(GL_TRIANGLES, 0, vertexCount);
 
-  // glPointSize(15.0f);
-  // glDrawArrays(GL_POINTS, 0, pointCount);
 
   // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  }
 }
 
 void Slime::clear() {

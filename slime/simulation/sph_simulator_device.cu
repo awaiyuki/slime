@@ -61,15 +61,18 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
   float colorQuantity = 0.0f;
   for (int j = 0; j < SPHSimulatorConstants::NUM_PARTICLES; j++) {
     float3 r =
-        make_float3(static_cast<float>(x) / static_cast<float>(gridSize),
-                    static_cast<float>(y) / static_cast<float>(gridSize),
-                    static_cast<float>(z) / static_cast<float>(gridSize)) -
+        make_float3((static_cast<float>(x) / static_cast<float>(gridSize) - 0.5) * 3,
+                    (static_cast<float>(y) / static_cast<float>(gridSize) - 0.5) * 3,
+                    (static_cast<float>(z) / static_cast<float>(gridSize) - 0.5) * 3) -
         particlesDevice[j].position;
     if (particlesDevice[j].density < EPSILON)
       continue;
     colorQuantity += particlesDevice[j].mass *
                      (1.0 / particlesDevice[j].density) *
                      poly6KernelDevice(r, 2.0 / static_cast<float>(gridSize));
+
+    // colorQuantity += particlesDevice[j].density *
+    //                  poly6KernelDevice(r, 2.0 / static_cast<float>(gridSize));
   }
   // cout << "colorQuantity:" << colorQuantity << endl;
 //  printf("cq: %f\n", colorQuantity / maxColorQuantity);
@@ -85,6 +88,16 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
   // colorFieldDevice[16 * gridSize * gridSize + 16 * gridSize + 15] = 0.7;
   // colorFieldDevice[16 * gridSize * gridSize + 15 * gridSize + 16] = 0.7;
   // colorFieldDevice[16 * gridSize * gridSize + 16 * gridSize + 16] = 0.7;
+
+  
+  // colorFieldDevice[10 * gridSize * gridSize + 10 * gridSize + 10] = 0.7;
+  // colorFieldDevice[10 * gridSize * gridSize + 11 * gridSize + 11] = 0.7;
+  // colorFieldDevice[10 * gridSize * gridSize + 10 * gridSize + 11] = 0.7;
+  // colorFieldDevice[10 * gridSize * gridSize + 11 * gridSize + 10] = 0.7;
+  // colorFieldDevice[17 * gridSize * gridSize + 10 * gridSize + 10] = 0.7;
+  // colorFieldDevice[17 * gridSize * gridSize + 17 * gridSize + 10] = 0.7;
+  // colorFieldDevice[17 * gridSize * gridSize + 10 * gridSize + 17] = 0.7;
+  // colorFieldDevice[17 * gridSize * gridSize + 17 * gridSize + 17] = 0.7;
 }
 
 __global__ void slime::computeDensityDevice(Particle *particlesDevice) {

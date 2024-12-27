@@ -5,6 +5,7 @@
 #include "object.h"
 #include <vector>
 #include <memory>
+#include <string>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -35,6 +36,7 @@ public:
 
 private:
   std::unique_ptr<SPHSimulator> sphSimulator;
+  std::string renderMode;
 };
 } // namespace slime
 
