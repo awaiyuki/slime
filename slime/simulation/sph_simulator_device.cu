@@ -275,6 +275,13 @@ __global__ void slime::computePositionParallel(Particle *particlesDevice,
   i.position += i.velocity * static_cast<float>(deltaTime);
 }
 
+__global__ void slime::updateSpatialHash(Particle *particlesDevice) {
+  int idx = threadIdx.x + blockDim.x * blockIdx.x;
+  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+    return;
+  auto &i = particlesDevice[idx];
+}
+
 __global__ void slime::copyPositionToVBO(float *d_positions,
                                          Particle *particlesDevice) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;

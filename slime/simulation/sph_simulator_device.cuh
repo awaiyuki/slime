@@ -41,6 +41,8 @@ extern __global__ void computeWallConstraintDevice(Particle *particlesDevice,
 extern __global__ void computePositionParallel(Particle *particlesDevice,
                                                double deltaTime);
 
+extern __global__ void updateSpatialHash(Particle *particlesDevice);
+
 extern __global__ void copyPositionToVBO(float *d_positions,
                                          Particle *particlesDevice);
 } // namespace slime

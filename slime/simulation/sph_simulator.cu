@@ -96,6 +96,9 @@ void SPHSimulator::updateParticles(double deltaTime) {
                                                          deltaTime);
   cudaDeviceSynchronize();
 
+  updateSpatialHash<<<blockSize, threadSize>>>(particlesDevice);
+  cudaDeviceSynchronize();
+
   /* Copy Particle Positions to VBO positions array */
   cudaGraphicsMapResources(1, &cudaVBOResource, 0);
   float *d_positions;
