@@ -40,7 +40,7 @@ inline __device__ __host__ float3 &operator+=(float3 &a, float3 &b) {
   return a;
 }
 inline __device__ __host__ float length(float3 &a) {
-  return sqrt(a.x * a.x * +a.y * a.y + a.z * a.z);
+  return sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
 }
 inline __device__ __host__ float3 &normalize(float3 &a) {
   return a / length(a);

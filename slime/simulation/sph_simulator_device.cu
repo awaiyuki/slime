@@ -61,9 +61,9 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
   float colorQuantity = 0.0f;
   for (int j = 0; j < SPHSimulatorConstants::NUM_PARTICLES; j++) {
     float3 r =
-        make_float3((static_cast<float>(x) / static_cast<float>(gridSize) - 0.5) * 3,
-                    (static_cast<float>(y) / static_cast<float>(gridSize) - 0.5) * 3,
-                    (static_cast<float>(z) / static_cast<float>(gridSize) - 0.5) * 3) -
+        make_float3((static_cast<float>(x) / static_cast<float>(gridSize)),
+                    (static_cast<float>(y) / static_cast<float>(gridSize)),
+                    (static_cast<float>(z) / static_cast<float>(gridSize))) -
         particlesDevice[j].position;
     if (particlesDevice[j].density < EPSILON)
       continue;

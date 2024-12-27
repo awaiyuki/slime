@@ -33,7 +33,7 @@ public:
   void updateParticles(double deltaTime);
 
   VertexData extractSurface();
-  std::vector<float> extractParticlePositions();
+  void extractParticlePositions(unsigned int vbo);
 
 private:
   std::vector<Particle> particles;

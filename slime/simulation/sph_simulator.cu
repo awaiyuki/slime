@@ -5,6 +5,10 @@
 #include <random>
 #include <iostream>
 #include <stdio.h>
+#include <glad/gl.h>
+#include <GLFW/glfw3.h>
+#include <cuda_gl_interop.h>
+
 using namespace slime;
 using namespace std;
 
@@ -97,9 +101,9 @@ void SPHSimulator::updateScalarField() {
   dim3 dimBlock(threadSize, threadSize, threadSize);
   const int blockSize = (GRID_SIZE + threadSize - 1) / threadSize;
   dim3 dimGrid(blockSize, blockSize, blockSize);
-  
-  updateScalarFieldDevice<<<dimGrid, dimBlock>>>(colorFieldDevice,
-                                                 particlesDevice, GRID_SIZE, 1954.0);
+
+  updateScalarFieldDevice<<<dimGrid, dimBlock>>>(
+      colorFieldDevice, particlesDevice, GRID_SIZE, 1954.0);
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess) {
     printf("updateScalarFieldDevice error: %s\n", cudaGetErrorString(err));
@@ -112,17 +116,35 @@ VertexData SPHSimulator::extractSurface() {
                               SPHSimulatorConstants::SURFACE_LEVEL);
 }
 
-std::vector<float> SPHSimulator::extractParticlePositions() {
+void SPHSimulator::extractParticlePositions(unsigned int vbo) {
 
-  cudaMemcpy(particles.data(), particlesDevice,
-             sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES,
-             cudaMemcpyDeviceToHost);
-  vector<float> positions;
-  positions.reserve(SPHSimulatorConstants::NUM_PARTICLES * 3);
-  for (const auto &i : particles) {
-    positions.push_back(i.position.x);
-    positions.push_back(i.position.y);
-    positions.push_back(i.position.z);
+  static cudaGraphicsResource_t cudaVBOResource = nullptr;
+
+  if (cudaVBOResource == nullptr) {
+    cudaGraphicsGLRegisterBuffer(&cudaVBOResource, vbo,
+                                 cudaGraphicsMapFlagsWriteDiscard);
   }
-  return positions;
+
+  float *devicePtr = nullptr;
+  size_t numBytes;
+  cudaGraphicsMapResources(1, &cudaVBOResource, 0);
+  cudaGraphicsResourceGetMappedPointer((void **)&devicePtr, &numBytes,
+                                       cudaVBOResource);
+
+  cudaMemcpy(devicePtr, particlesDevice,
+             sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES,
+             cudaMemcpyDeviceToDevice);
+
+  cudaGraphicsUnmapResources(1, &cudaVBOResource, 0);
+  // cudaMemcpy(particles.data(), particlesDevice,
+  //            sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES,
+  //            cudaMemcpyDeviceToHost);
+  // vector<float> positions;
+  // positions.reserve(SPHSimulatorConstants::NUM_PARTICLES * 3);
+  // for (const auto &i : particles) {
+  //   positions.push_back(i.position.x);
+  //   positions.push_back(i.position.y);
+  //   positions.push_back(i.position.z);
+  // }
+  // return positions;
 }
