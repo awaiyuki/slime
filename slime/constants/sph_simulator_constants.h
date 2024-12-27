@@ -3,7 +3,7 @@
 namespace slime {
 class SPHSimulatorConstants {
 public:
-  static constexpr int NUM_PARTICLES = 3000;
+  static constexpr int NUM_PARTICLES = 5000;
   static constexpr float PARTICLE_MASS = 1.0f;
   static constexpr float GAS_CONSTANT = 0.000002f;
   static constexpr float REST_DENSITY = 1000.0f;

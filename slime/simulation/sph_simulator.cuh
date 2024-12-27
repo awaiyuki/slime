@@ -26,9 +26,10 @@ struct Particle {
 class SPHSimulator {
 
 public:
-  SPHSimulator();
+  SPHSimulator(const unsigned int vbo);
   ~SPHSimulator();
 
+  std::vector<Particle> *getParticlesPointer();
   void updateScalarField();
   void updateParticles(double deltaTime);
 
@@ -38,6 +39,7 @@ public:
 private:
   std::vector<Particle> particles;
   Particle *particlesDevice;
+  cudaGraphicsResource_t cudaVBOResource;
 
   static constexpr int GRID_SIZE = 25;
   float colorField[GRID_SIZE * GRID_SIZE * GRID_SIZE];

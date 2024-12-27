@@ -29,9 +29,8 @@ Slime::~Slime() {}
 
 void Slime::setup() {
   cout << "setup Slime" << endl;
-  this->renderMode = "cube";
+  this->renderMode = "point";
   this->shader = new Shader("./shaders/slime.vert", "./shaders/slime.frag");
-  this->sphSimulator = make_unique<SPHSimulator>();
   shader->use();
 
   glGenVertexArrays(1, &VAO);
@@ -41,30 +40,36 @@ void Slime::setup() {
   glBindVertexArray(VAO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-  glBufferData(GL_ARRAY_BUFFER, 1000000 * sizeof(float), nullptr,
-               GL_DYNAMIC_DRAW);
+  float positions[SPHSimulatorConstants::NUM_PARTICLES * 3];
+
+  // initialize buffer data for point rendering
+  glBufferData(GL_ARRAY_BUFFER,
+               sizeof(float) * SPHSimulatorConstants::NUM_PARTICLES * 3,
+               positions, GL_DYNAMIC_DRAW);
+
+  /* TODO: need to use glBufferData to init buffer data for Marching Cubes
+   * rendering. */
 
   /* position attribute */
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
+
+  this->sphSimulator = make_unique<SPHSimulator>(VBO);
+  std::vector<Particle> *particles = sphSimulator->getParticlesPointer();
 }
 
 void Slime::render(double deltaTime) {
   //   cout << "render Slime" << endl;
 
   /* SPH Simulation */
-
   sphSimulator->updateParticles(deltaTime);
   if (renderMode == "point") {
 
     // Render with points
-    sphSimulator->extractParticlePositions(VBO);
     const int32_t pointCount = SPHSimulatorConstants::NUM_PARTICLES;
-    const int32_t size = 3 * pointCount;
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    // glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * size,
-    // positions.data());
+
     /* Transform */
     shader->use();
 

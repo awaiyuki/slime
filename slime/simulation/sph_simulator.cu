@@ -12,7 +12,7 @@
 using namespace slime;
 using namespace std;
 
-SPHSimulator::SPHSimulator() {
+SPHSimulator::SPHSimulator(const unsigned int vbo) {
   random_device rd;
   mt19937 gen(rd());
   uniform_real_distribution<> dis(0.4f, 0.5f);
@@ -44,6 +44,7 @@ SPHSimulator::SPHSimulator() {
   cudaMemcpy(particlesDevice, particles.data(),
              sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES,
              cudaMemcpyHostToDevice);
+  cudaGraphicsGLRegisterBuffer(&cudaVBOResource, vbo, cudaGraphicsMapFlagsNone);
 }
 
 SPHSimulator::~SPHSimulator() {
@@ -51,16 +52,17 @@ SPHSimulator::~SPHSimulator() {
   cudaFree(colorFieldDevice);
 }
 
+std::vector<Particle> *SPHSimulator::getParticlesPointer() {
+  return &particles;
+}
+
 void SPHSimulator::updateParticles(double deltaTime) {
 
   const int threadSize = 128;
   const int blockSize =
       (SPHSimulatorConstants::NUM_PARTICLES + threadSize - 1) / threadSize;
+
   computeDensityDevice<<<blockSize, threadSize>>>(particlesDevice);
-  cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    printf("computeDensity error: %s\n", cudaGetErrorString(err));
-  }
   cudaDeviceSynchronize();
 
   computePressureDevice<<<blockSize, threadSize>>>(particlesDevice);
@@ -93,6 +95,21 @@ void SPHSimulator::updateParticles(double deltaTime) {
   computeWallConstraintDevice<<<blockSize, threadSize>>>(particlesDevice,
                                                          deltaTime);
   cudaDeviceSynchronize();
+
+  /* Copy Particle Positions to VBO positions array */
+  cudaGraphicsMapResources(1, &cudaVBOResource, 0);
+  float *d_positions;
+  size_t size;
+  cudaGraphicsResourceGetMappedPointer((void **)&d_positions, &size,
+                                       cudaVBOResource);
+  copyPositionToVBO<<<blockSize, threadSize>>>(d_positions, particlesDevice);
+  cudaDeviceSynchronize();
+  cudaError_t err = cudaGetLastError();
+  if (err != cudaSuccess) {
+    printf("cuda kernel error: %s\n", cudaGetErrorString(err));
+  }
+
+  cudaGraphicsUnmapResources(1, &cudaVBOResource, 0);
 }
 
 void SPHSimulator::updateScalarField() {
@@ -118,24 +135,17 @@ VertexData SPHSimulator::extractSurface() {
 
 void SPHSimulator::extractParticlePositions(unsigned int vbo) {
 
-  static cudaGraphicsResource_t cudaVBOResource = nullptr;
+  // float *devicePtr = nullptr;
+  // size_t numBytes;
+  // cudaGraphicsMapResources(1, &cudaVBOResource, 0);
+  // cudaGraphicsResourceGetMappedPointer((void **)&devicePtr, &numBytes,
+  //                                      cudaVBOResource);
 
-  if (cudaVBOResource == nullptr) {
-    cudaGraphicsGLRegisterBuffer(&cudaVBOResource, vbo,
-                                 cudaGraphicsMapFlagsWriteDiscard);
-  }
+  // cudaMemcpy(devicePtr, particlesDevice,
+  //            sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES,
+  //            cudaMemcpyDeviceToDevice);
 
-  float *devicePtr = nullptr;
-  size_t numBytes;
-  cudaGraphicsMapResources(1, &cudaVBOResource, 0);
-  cudaGraphicsResourceGetMappedPointer((void **)&devicePtr, &numBytes,
-                                       cudaVBOResource);
-
-  cudaMemcpy(devicePtr, particlesDevice,
-             sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES,
-             cudaMemcpyDeviceToDevice);
-
-  cudaGraphicsUnmapResources(1, &cudaVBOResource, 0);
+  // cudaGraphicsUnmapResources(1, &cudaVBOResource, 0);
   // cudaMemcpy(particles.data(), particlesDevice,
   //            sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES,
   //            cudaMemcpyDeviceToHost);
