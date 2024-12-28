@@ -87,7 +87,7 @@ void SPHSimulator::updateParticles(double deltaTime) {
   computeGravityDevice<<<blockSize, threadSize>>>(d_particles, deltaTime);
   cudaDeviceSynchronize();
 
-  computePositionParallel<<<blockSize, threadSize>>>(d_particles, deltaTime);
+  computePositionDevice<<<blockSize, threadSize>>>(d_particles, deltaTime);
   cudaDeviceSynchronize();
 
   computeWallConstraintDevice<<<blockSize, threadSize>>>(d_particles,
