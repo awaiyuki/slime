@@ -34,16 +34,15 @@ public:
   void updateParticles(double deltaTime);
 
   VertexData extractSurface();
-  void extractParticlePositions(unsigned int vbo);
 
 private:
   std::vector<Particle> particles;
-  Particle *particlesDevice;
+  Particle *d_particles;
   cudaGraphicsResource_t cudaVBOResource;
 
   static constexpr int GRID_SIZE = 25;
-  float colorField[GRID_SIZE * GRID_SIZE * GRID_SIZE];
-  float *colorFieldDevice;
+  float scalarField[GRID_SIZE * GRID_SIZE * GRID_SIZE];
+  float *d_scalarField;
 
   std::unique_ptr<MarchingCubes> marchingCubes;
 };
