@@ -38,8 +38,8 @@ extern __global__ void computeGravityDevice(Particle *particlesDevice,
 extern __global__ void computeWallConstraintDevice(Particle *particlesDevice,
                                                    double deltaTime);
 
-extern __global__ void computePositionParallel(Particle *particlesDevice,
-                                               double deltaTime);
+extern __global__ void computePositionDevice(Particle *particlesDevice,
+                                             double deltaTime);
 
 extern __global__ void updateSpatialHash(Particle *particlesDevice);
 

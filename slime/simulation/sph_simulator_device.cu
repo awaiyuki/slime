@@ -266,8 +266,8 @@ __global__ void slime::computeWallConstraintDevice(Particle *particlesDevice,
   }
 }
 
-__global__ void slime::computePositionParallel(Particle *particlesDevice,
-                                               double deltaTime) {
+__global__ void slime::computePositionDevice(Particle *particlesDevice,
+                                             double deltaTime) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
   if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
     return;
