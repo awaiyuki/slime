@@ -1,6 +1,8 @@
 #include "marching_cubes_device.cuh"
 #include "marching_cubes_tables.h"
 #include <stdio.h>
+#define EPSILON 1e-6
+
 using namespace slime;
 
 __constant__ int slime::d_triangulation[256][16];
@@ -16,12 +18,12 @@ __device__ float3 slime::interpolateVertices(float *d_scalarField, int gridSize,
   float scalarB =
       d_scalarField[vb[2] * gridSize * gridSize + vb[1] * gridSize + vb[0]];
   float scale = 1.0f / gridSize;
-  float t = (surfaceLevel - scalarA) / (scalarB - scalarA);
+  float t = (surfaceLevel - scalarA) / (scalarB - scalarA + EPSILON);
   // printf("%d %d %f %f %f\n", va[0], vb[0], scalarA, scalarB, t);
   return (make_float3(va[0], va[1], va[2]) +
-         t * (make_float3(vb[0], vb[1], vb[2]) -
-              make_float3(va[0], va[1],
-                          va[2])) ) * scale;
+          t * (make_float3(vb[0], vb[1], vb[2]) -
+               make_float3(va[0], va[1], va[2]))) *
+         scale;
 }
 
 __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
@@ -52,24 +54,29 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
   int tableKey = 0;
   for (int i = 0; i < 8; i++) {
     if (d_scalarField[(z + diff[i][2]) * gridSize * gridSize +
-                      (y + diff[i][1]) * gridSize + (x + diff[i][0])] >
+                      (y + diff[i][1]) * gridSize + (x + diff[i][0])] <
         surfaceLevel) {
       tableKey |= 1 << i;
     }
   }
 
-
   int *edges = d_triangulation[tableKey];
 
   for (int i = 0; i < 16; i += 3) {
-      if (edges[i] == -1) {
-          // temporary solution
-          const int cellIndex = z * gridSize * gridSize + y * gridSize + x;
-          d_vertexDataPtr->vertices[15 * cellIndex + i] = make_float3(0.0f, 0.0f, 0.0f);
-          d_vertexDataPtr->vertices[15 * cellIndex + i + 1] = make_float3(0.0f, 0.0f, 0.0f);
-          d_vertexDataPtr->vertices[15 * cellIndex + i + 2] = make_float3(0.0f, 0.0f, 0.0f);
-          continue;
-      }
+    // if (edges[i] == -1) {
+    //   // temporary solution
+
+    //   // 이 부분도 실제로는 그리는 게 문제인듯
+
+    //   const int cellIndex = z * gridSize * gridSize + y * gridSize + x;
+    //   d_vertexDataPtr->vertices[15 * cellIndex + i] =
+    //       make_float3(0.0f, 0.0f, 0.0f);
+    //   d_vertexDataPtr->vertices[15 * cellIndex + i + 1] =
+    //       make_float3(0.0f, 0.0f, 0.0f);
+    //   d_vertexDataPtr->vertices[15 * cellIndex + i + 2] =
+    //       make_float3(0.0f, 0.0f, 0.0f);
+    //   continue;
+    // }
     float3 v1Float3 = interpolateVertices(
         d_scalarField, gridSize, surfaceLevel,
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i]][0]],
@@ -85,12 +92,12 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i + 2]][0]],
         cubeVertexCoordInt[d_cornerIndexFromEdge[edges[i + 2]][1]]);
 
-    atomicAdd(d_counter, 3);
     // printf("%d\n", *d_counter);
     const int cellIndex = z * gridSize * gridSize + y * gridSize + x;
-    d_vertexDataPtr->vertices[15 * cellIndex + i] = v1Float3;
-    d_vertexDataPtr->vertices[15 * cellIndex + i + 1] = v2Float3;
-    d_vertexDataPtr->vertices[15 * cellIndex + i + 2] = v3Float3;
+    d_vertexDataPtr->vertices[*d_counter + i] = v1Float3;
+    d_vertexDataPtr->vertices[*d_counter + i + 1] = v2Float3;
+    d_vertexDataPtr->vertices[*d_counter + i + 2] = v3Float3;
+    atomicAdd(d_counter, 3);
 
     // std::cout << "extract surface, triangle.v1[0]: " <<
     // triangle.v1[0]

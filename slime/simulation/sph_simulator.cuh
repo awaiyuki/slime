@@ -1,10 +1,11 @@
 #ifndef SPH_SIMULATOR_CUH
 #define SPH_SIMULATOR_CUH
 
+#include <functional>
+#include <memory>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
-#include <memory>
 #include <slime/constants/sph_simulator_constants.h>
 #include "marching_cubes.cuh"
 #include <glm/glm.hpp>
@@ -39,6 +40,9 @@ private:
   std::vector<Particle> particles;
   Particle *d_particles;
   cudaGraphicsResource_t cudaVBOResource;
+
+  std::hash<int> spatialHasher;
+  std::unordered_multimap<int, int> spatialHash;
 
   static constexpr int GRID_SIZE = 25;
   float scalarField[GRID_SIZE * GRID_SIZE * GRID_SIZE];

@@ -209,10 +209,8 @@ __global__ void slime::computeGravityDevice(Particle *particlesDevice,
 
 __global__ void slime::computeWallConstraintDevice(Particle *particlesDevice,
                                                    double deltaTime) {
-
-  /* TODO: replace with reflection */
-
-  /* Spring-Damper Collision */
+  /* Handling Collision */
+  /* Simulation Space: x, y, z in [-0.5, 0.5] */
 
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
   if (idx >= SPHSimulatorConstants::NUM_PARTICLES)

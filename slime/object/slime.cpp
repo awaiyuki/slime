@@ -29,7 +29,7 @@ Slime::~Slime() {}
 
 void Slime::setup() {
   cout << "setup Slime" << endl;
-  this->renderMode = "point";
+  this->renderMode = "cube";
   this->shader = new Shader("./shaders/slime.vert", "./shaders/slime.frag");
   shader->use();
 

@@ -15,7 +15,7 @@ using namespace std;
 SPHSimulator::SPHSimulator(const unsigned int vbo) {
   random_device rd;
   mt19937 gen(rd());
-  uniform_real_distribution<> dis(0.4f, 0.5f);
+  uniform_real_distribution<> dis(-0.1f, 0.1f);
 
   for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
     Particle particle;
