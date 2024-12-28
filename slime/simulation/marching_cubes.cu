@@ -17,11 +17,12 @@ MarchingCubes::MarchingCubes(int _gridSize) : gridSize(_gridSize) {
   float3 *d_vertices;
   cudaMalloc((void **)&d_vertices,
              sizeof(float3) * gridSize * gridSize * gridSize * 15);
-  VertexData hostVertexData;
-  hostVertexData.size = 0;
-  hostVertexData.vertices = d_vertices;
+
+  VertexData tempVertexData;
+  tempVertexData.size = 0;
+  tempVertexData.vertices = d_vertices;
   cudaMalloc((void **)&d_vertexDataPtr, sizeof(VertexData));
-  cudaMemcpy(d_vertexDataPtr, &hostVertexData, sizeof(VertexData),
+  cudaMemcpy(d_vertexDataPtr, &tempVertexData, sizeof(VertexData),
              cudaMemcpyHostToDevice);
 }
 
@@ -63,6 +64,7 @@ VertexData MarchingCubes::march(float *d_scalarField, float surfaceLevel) {
     printf("marchParallel error: %s\n", cudaGetErrorString(err));
   }
   cudaDeviceSynchronize();
+
   /* get triangles from device and return */
   VertexData tempVertexData;
   cudaMemcpy(&tempVertexData, d_vertexDataPtr, sizeof(VertexData),
@@ -70,8 +72,11 @@ VertexData MarchingCubes::march(float *d_scalarField, float surfaceLevel) {
   cudaMemcpy(vertexData.vertices, tempVertexData.vertices,
              sizeof(float3) * gridSize * gridSize * gridSize * 15,
              cudaMemcpyDeviceToHost);
+  int h_counter;
+  cudaMemcpy(&h_counter, d_counter, sizeof(int), cudaMemcpyDeviceToHost);
   // vertexData.size = gridSize * gridSize * gridSize * 15;
-  vertexData.size = *d_counter;
+  cout << h_counter << endl;
+  vertexData.size = h_counter;
   //   cudaMemcpy(&vertexData.size, d_counter, sizeof(int),
   //   cudaMemcpyDeviceToHost);
   cout << vertexData.size << endl;

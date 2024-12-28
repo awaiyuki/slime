@@ -68,8 +68,7 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
         particlesDevice[j].position;
     if (particlesDevice[j].density < EPSILON)
       continue;
-    colorQuantity += particlesDevice[j].mass *
-                     (1.0 / particlesDevice[j].density) *
+    colorQuantity += particlesDevice[j].density *
                      poly6KernelDevice(r, 2.0 / static_cast<float>(gridSize));
 
     // colorQuantity += particlesDevice[j].density *
@@ -78,8 +77,7 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
   }
   // cout << "colorQuantity:" << colorQuantity << endl;
   //  printf("cq: %f\n", colorQuantity / maxColorQuantity);
-  colorFieldDevice[z * gridSize * gridSize + y * gridSize + x] =
-      colorQuantity / maxColorQuantity;
+  colorFieldDevice[z * gridSize * gridSize + y * gridSize + x] = colorQuantity;
 
   /* Test */
   // colorFieldDevice[15 * gridSize * gridSize + 15 * gridSize + 15] = 0.7;
