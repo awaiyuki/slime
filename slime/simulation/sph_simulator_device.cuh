@@ -7,7 +7,6 @@
 #include "sph_simulator.cuh"
 
 namespace slime {
-extern float poly6Kernel(glm::vec3 r, float h);
 extern __device__ float poly6KernelDevice(float3 r, float h);
 extern __device__ float spikyKernelDevice(float3 r, float h);
 extern __device__ float gradientSpikyKernelDevice(float3 r, float h);

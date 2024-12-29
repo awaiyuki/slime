@@ -6,17 +6,11 @@
 
 using namespace slime;
 
-float slime::poly6Kernel(glm::vec3 r, float h) {
-  float rMagnitude = glm::length(r);
-  if (rMagnitude > h)
-    return 0.0f;
+__device__ int spatialKeys;
+__device__ int spatialIndex;
+__device__ int spatialOffset;
 
-  float result = 315.0f / (64.0f * PI * glm::pow(h, 9)) *
-                 glm::pow(h * h - rMagnitude * rMagnitude, 3);
-  return result;
-}
-
-__host__ __device__ float slime::poly6KernelDevice(float3 r, float h) {
+__device__ float slime::poly6KernelDevice(float3 r, float h) {
   float rMagnitude = length(r);
   if (rMagnitude > h)
     return 0.0f;
@@ -261,11 +255,15 @@ __global__ void slime::computePositionDevice(Particle *particlesDevice,
   i.position += i.velocity * static_cast<float>(deltaTime);
 }
 
+__device__ void hash() {}
+
 __global__ void slime::updateSpatialHash(Particle *particlesDevice) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
   if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
     return;
   auto &i = particlesDevice[idx];
+
+  // unsigned int key = hash(floor(i.position.x));
 }
 
 __global__ void slime::copyPositionToVBO(float *d_positions,
