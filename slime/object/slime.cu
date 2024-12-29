@@ -1,4 +1,4 @@
-#include "slime.h"
+#include "slime.cuh"
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -9,6 +9,9 @@
 #include <iostream>
 #include <slime/renderer/shader.h>
 #include <stb_image.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <slime/constants/marching_cubes_constants.h>
 
 using namespace slime;
 using namespace std;
@@ -42,13 +45,17 @@ void Slime::setup() {
 
   float positions[SPHSimulatorConstants::NUM_PARTICLES * 3];
 
-  // initialize buffer data for point rendering
-  glBufferData(GL_ARRAY_BUFFER,
-               sizeof(float) * SPHSimulatorConstants::NUM_PARTICLES * 3,
-               positions, GL_DYNAMIC_DRAW);
+  if (renderMode == "point") {
+    glBufferData(GL_ARRAY_BUFFER,
+                 sizeof(float) * SPHSimulatorConstants::NUM_PARTICLES * 3,
+                 positions, GL_DYNAMIC_DRAW);
 
-  /* TODO: need to use glBufferData to init buffer data for Marching Cubes
-   * rendering. */
+  } else {
+    const int gridSize = SPHSimulatorConstants::GRID_SIZE;
+    glBufferData(GL_ARRAY_BUFFER,
+                 sizeof(float) * gridSize * gridSize * gridSize * 15 * 3,
+                 nullptr, GL_DYNAMIC_DRAW);
+  }
 
   /* position attribute */
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
@@ -108,7 +115,7 @@ void Slime::render(double deltaTime) {
     sphSimulator->updateScalarField();
 
     slime::VertexData vertexData = sphSimulator->extractSurface();
-    auto vertices = vertexData.vertices;
+    float3 *vertices = vertexData.vertices;
     const int vertexCount = vertexData.size;
     cout << "vertexCount: " << vertexCount << endl;
     const int triangleDataSize = 3 * vertexCount;
@@ -128,7 +135,7 @@ void Slime::render(double deltaTime) {
 
     glm::mat4 model = glm::mat4(1.0f);
 
-    model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
     model = glm::translate(model, glm::vec3(initX, initY, initZ));
 
     glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));

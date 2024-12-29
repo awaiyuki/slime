@@ -121,8 +121,10 @@ void SPHSimulator::updateScalarField() {
   const int blockSize = (GRID_SIZE + threadSize - 1) / threadSize;
   dim3 dimGrid(blockSize, blockSize, blockSize);
 
-  updateScalarFieldDevice<<<dimGrid, dimBlock>>>(d_scalarField, d_particles,
-                                                 GRID_SIZE, 1954.0);
+  updateScalarFieldDevice<<<dimGrid, dimBlock>>>(
+      d_scalarField, d_particles, GRID_SIZE,
+      1954.0); // need to investigate normalization methods.
+
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess) {
     printf("updated_scalarField error: %s\n", cudaGetErrorString(err));

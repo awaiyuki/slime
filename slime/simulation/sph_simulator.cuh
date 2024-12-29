@@ -44,7 +44,7 @@ private:
   std::hash<int> spatialHasher;
   std::unordered_multimap<int, int> spatialHash;
 
-  static constexpr int GRID_SIZE = 25;
+  static constexpr int GRID_SIZE = SPHSimulatorConstants::GRID_SIZE;
   float scalarField[GRID_SIZE * GRID_SIZE * GRID_SIZE];
   float *d_scalarField;
 

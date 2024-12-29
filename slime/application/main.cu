@@ -1,10 +1,9 @@
 
 
-
 #include <slime/engine/engine.h>
 #include <slime/object/object.h>
 #include <slime/object/plane.h>
-#include <slime/object/slime.h>
+#include <slime/object/slime.cuh>
 
 using namespace std;
 

@@ -8,8 +8,9 @@ using namespace slime;
 __constant__ int slime::d_triangulation[256][16];
 __constant__ int slime::d_cornerIndexFromEdge[12][2];
 
-__device__ const int diff[8][3] = {{0, 0, 0}, {1, 0, 0}, {1, 0, 1}, {0, 0, 1},
-                                   {0, 1, 0}, {1, 1, 0}, {1, 1, 1}, {0, 1, 1}};
+__device__ const int diff[8][3] = {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0},
+                                   {0, 0, 1}, {1, 0, 1}, {1, 1, 1}, {0, 1, 1}};
+
 __device__ float3 slime::interpolateVertices(float *d_scalarField, int gridSize,
                                              float surfaceLevel, int va[3],
                                              int vb[3]) {
@@ -21,9 +22,11 @@ __device__ float3 slime::interpolateVertices(float *d_scalarField, int gridSize,
                 ? (surfaceLevel - scalarA) / (scalarB - scalarA)
                 : 0.5f;
   // printf("%d %d %f %f %f\n", va[0], vb[0], scalarA, scalarB, t);
-  const float3 posA = make_float3(va[0], va[1], va[2]) / float(gridSize);
-  const float3 posB = make_float3(vb[0], vb[1], vb[2]) / float(gridSize);
-  return (posA + t * (posB - posA)) - make_float3(0.5f, 0.5f, 0.5f);
+  const float3 posA = make_float3(va[0], va[1], va[2]) / float(gridSize) -
+                      make_float3(0.5f, 0.5f, 0.5f);
+  const float3 posB = make_float3(vb[0], vb[1], vb[2]) / float(gridSize) -
+                      make_float3(0.5f, 0.5f, 0.5f);
+  return (posA + t * (posB - posA));
 }
 
 __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
@@ -50,7 +53,7 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
     float scalarValue =
         d_scalarField[(z + diff[i][2]) * gridSize * gridSize +
                       (y + diff[i][1]) * gridSize + (x + diff[i][0])];
-    if (scalarValue < surfaceLevel) {
+    if (scalarValue > surfaceLevel) {
       tableKey |= 1 << i;
     }
   }
@@ -76,14 +79,9 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
         cubeVertexCoord[d_cornerIndexFromEdge[edges[i + 2]][0]],
         cubeVertexCoord[d_cornerIndexFromEdge[edges[i + 2]][1]]);
 
-    // printf("%d\n", *d_counter);
     int offset = atomicAdd(d_counter, 3);
     d_vertexDataPtr->vertices[offset] = v1;
     d_vertexDataPtr->vertices[offset + 1] = v2;
     d_vertexDataPtr->vertices[offset + 2] = v3;
-
-    // std::cout << "extract surface, triangle.v1[0]: " <<
-    // triangle.v1[0]
-    //           << std::endl;
   }
 }
