@@ -10,7 +10,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <slime/simulation/sph_simulator.cuh>
-#include <slime/simulation/marching_cubes.cuh>
+#include <slime/renderer/marching_cubes.cuh>
 
 namespace slime {
 struct Edge {
