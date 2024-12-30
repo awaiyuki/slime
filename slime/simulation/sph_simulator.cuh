@@ -7,7 +7,7 @@
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include <slime/constants/sph_simulator_constants.h>
-#include "marching_cubes.cuh"
+#include <slime/renderer/marching_cubes.cuh>
 #include <glm/glm.hpp>
 
 namespace slime {
@@ -40,9 +40,6 @@ private:
   std::vector<Particle> particles;
   Particle *d_particles;
   cudaGraphicsResource_t cudaVBOResource;
-
-  std::hash<int> spatialHasher;
-  std::unordered_multimap<int, int> spatialHash;
 
   static constexpr int GRID_SIZE = SPHSimulatorConstants::GRID_SIZE;
   float scalarField[GRID_SIZE * GRID_SIZE * GRID_SIZE];
