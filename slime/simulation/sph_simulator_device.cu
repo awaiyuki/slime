@@ -3,12 +3,13 @@
 #include <math.h>
 #define PI 3.141592653589793238462643
 #define EPSILON 0.000001
+#include <thrust/sort.h>
 
 using namespace slime;
-
-__device__ int spatialKeys;
-__device__ int spatialIndex;
-__device__ int spatialOffset;
+using namespace slime::SPHSimulatorConstants;
+__device__ int hashKeys[NUM_PARTICLES];
+__device__ int hashIndices[NUM_PARTICLES];
+__device__ int hashOffsets[NUM_PARTICLES];
 
 __device__ float slime::poly6KernelDevice(float3 r, float h) {
   float rMagnitude = length(r);
@@ -61,7 +62,7 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
                   (static_cast<float>(y) / static_cast<float>(gridSize)),
                   (static_cast<float>(z) / static_cast<float>(gridSize))) -
       make_float3(0.5f, 0.5f, 0.5f);
-  for (int j = 0; j < SPHSimulatorConstants::NUM_PARTICLES; j++) {
+  for (int j = 0; j < NUM_PARTICLES; j++) {
     float3 r = positionOnGrid - particlesDevice[j].position;
     if (particlesDevice[j].density < EPSILON)
       continue;
@@ -86,40 +87,38 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
 __global__ void slime::computeDensityDevice(Particle *particlesDevice) {
 
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+  if (idx >= NUM_PARTICLES)
     return;
   auto &i = particlesDevice[idx];
 
   i.density = 0.0f;
-  for (int idx_j = 0; idx_j < SPHSimulatorConstants::NUM_PARTICLES; idx_j++) {
+  for (int idx_j = 0; idx_j < NUM_PARTICLES; idx_j++) {
     auto &j = particlesDevice[idx_j];
 
     if (idx == idx_j)
       continue;
 
     auto r = j.position - i.position;
-    i.density +=
-        j.mass * poly6KernelDevice(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
+    i.density += j.mass * poly6KernelDevice(r, SMOOTHING_RADIUS);
   }
 }
 
 __global__ void slime::computePressureDevice(Particle *particlesDevice) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+  if (idx >= NUM_PARTICLES)
     return;
   auto &i = particlesDevice[idx];
-  i.pressure = SPHSimulatorConstants::GAS_CONSTANT *
-               (i.density - SPHSimulatorConstants::REST_DENSITY);
+  i.pressure = GAS_CONSTANT * (i.density - REST_DENSITY);
 }
 __global__ void slime::computePressureForceDevice(Particle *particlesDevice,
                                                   double deltaTime) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+  if (idx >= NUM_PARTICLES)
     return;
   auto &i = particlesDevice[idx];
 
   float3 pressureForce = make_float3(0.0f, 0.0f, 0.0f);
-  for (int idx_j = 0; idx_j < SPHSimulatorConstants::NUM_PARTICLES; idx_j++) {
+  for (int idx_j = 0; idx_j < NUM_PARTICLES; idx_j++) {
     auto &j = particlesDevice[idx_j];
 
     if (idx == idx_j)
@@ -129,10 +128,9 @@ __global__ void slime::computePressureForceDevice(Particle *particlesDevice,
       continue;
 
     auto r = j.position - i.position;
-    pressureForce +=
-        (-1) * normalize(r) * j.mass * (i.pressure + j.pressure) /
-        (2.0f * j.density) *
-        gradientSpikyKernelDevice(r, SPHSimulatorConstants::SMOOTHING_RADIUS);
+    pressureForce += (-1) * normalize(r) * j.mass * (i.pressure + j.pressure) /
+                     (2.0f * j.density) *
+                     gradientSpikyKernelDevice(r, SMOOTHING_RADIUS);
   }
   auto acceleration = pressureForce / i.mass;
   auto deltaVelocity = acceleration * float(deltaTime);
@@ -142,11 +140,11 @@ __global__ void slime::computePressureForceDevice(Particle *particlesDevice,
 __global__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
                                                    double deltaTime) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+  if (idx >= NUM_PARTICLES)
     return;
   auto &i = particlesDevice[idx];
   float3 viscosityForce = make_float3(0.0f, 0.0f, 0.0f);
-  for (int idx_j = 0; idx_j < SPHSimulatorConstants::NUM_PARTICLES; idx_j++) {
+  for (int idx_j = 0; idx_j < NUM_PARTICLES; idx_j++) {
     auto &j = particlesDevice[idx_j];
     if (idx == idx_j)
       continue;
@@ -156,8 +154,7 @@ __global__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
 
     auto r = j.position - i.position;
     viscosityForce += j.mass * (j.velocity - i.velocity) / j.density *
-                      laplacianViscosityKernelDevice(
-                          r, SPHSimulatorConstants::SMOOTHING_RADIUS);
+                      laplacianViscosityKernelDevice(r, SMOOTHING_RADIUS);
   }
   viscosityForce *= 0.1f; // VISCOSITY_COEFFICIENT
 
@@ -169,7 +166,7 @@ __global__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
 __global__ void slime::computeSurfaceTensionDevice(Particle *particlesDevice,
                                                    double deltaTime) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+  if (idx >= NUM_PARTICLES)
     return;
   auto &i = particlesDevice[idx];
 
@@ -181,7 +178,7 @@ __global__ void slime::computeSurfaceTensionDevice(Particle *particlesDevice,
 __global__ void slime::computeGravityDevice(Particle *particlesDevice,
                                             double deltaTime) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+  if (idx >= NUM_PARTICLES)
     return;
   auto &i = particlesDevice[idx];
   auto acceleration = make_float3(0, -0.098f, 0);
@@ -195,7 +192,7 @@ __global__ void slime::computeWallConstraintDevice(Particle *particlesDevice,
   /* Simulation Space: x, y, z in [-0.5, 0.5] */
 
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+  if (idx >= NUM_PARTICLES)
     return;
   auto &i = particlesDevice[idx];
   const float FLOOR_CONSTRAINT = -0.5f;
@@ -249,27 +246,39 @@ __global__ void slime::computeWallConstraintDevice(Particle *particlesDevice,
 __global__ void slime::computePositionDevice(Particle *particlesDevice,
                                              double deltaTime) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+  if (idx >= NUM_PARTICLES)
     return;
   auto &i = particlesDevice[idx];
   i.position += i.velocity * static_cast<float>(deltaTime);
 }
 
-__device__ void hash() {}
+__device__ unsigned int hash(int3 source) {}
 
 __global__ void slime::updateSpatialHash(Particle *particlesDevice) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+  if (idx >= NUM_PARTICLES)
     return;
-  auto &i = particlesDevice[idx];
 
-  // unsigned int key = hash(floor(i.position.x));
+  auto &i = particlesDevice[idx];
+  const int r = SMOOTHING_RADIUS;
+
+  int3 cellPosition =
+      make_int3(floor(i.position.x / r), floor(i.position.y / r),
+                floor(i.position.z / r));
+  unsigned int cellHash = hash(cellPosition);
+  unsigned key = cellHash % NUM_PARTICLES;
+
+  hashKeys[idx] = key;
+  hashIndices[idx] = idx;
+  hashOffsets[idx] = NUM_PARTICLES;
+
+  // sort using thrust
 }
 
 __global__ void slime::copyPositionToVBO(float *d_positions,
                                          Particle *particlesDevice) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= SPHSimulatorConstants::NUM_PARTICLES)
+  if (idx >= NUM_PARTICLES)
     return;
   auto &i = particlesDevice[idx];
 
