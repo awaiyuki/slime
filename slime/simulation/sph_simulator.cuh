@@ -9,6 +9,8 @@
 #include <slime/constants/sph_simulator_constants.h>
 #include <slime/renderer/marching_cubes.cuh>
 #include <glm/glm.hpp>
+#include <thrust/device_vector.h>
+#include <thrust/sort.h>
 
 namespace slime {
 
@@ -18,10 +20,6 @@ struct Particle {
   float density, pressure, mass;
   float4 color;
   float life;
-
-  __host__ __device__ bool operator==(const Particle &p) {
-    return this->id == p.id;
-  }
 };
 
 class SPHSimulator {
@@ -38,6 +36,13 @@ public:
 
 private:
   std::vector<Particle> particles;
+
+  thrust::device_vector<unsigned int> hashKeys;
+  thrust::device_vector<unsigned int> hashIndices;
+
+  unsigned int *raw_hashKeys;
+  unsigned int *raw_hashIndices;
+
   Particle *d_particles;
   cudaGraphicsResource_t cudaVBOResource;
 

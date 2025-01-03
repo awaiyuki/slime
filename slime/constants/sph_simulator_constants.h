@@ -8,7 +8,7 @@ constexpr float REST_DENSITY = 1.0f;
 constexpr float VISCOSITY_COEFFICIENT = 0.1f;
 constexpr float SMOOTHING_RADIUS = 1.0f; // correct?
 constexpr float SURFACE_LEVEL = 0.5f;
-constexpr int GRID_SIZE = 50;
+constexpr int GRID_SIZE = 50; // for both spatial hashing and marching cubes
 }; // namespace slime::SPHSimulatorConstants
 
 #endif

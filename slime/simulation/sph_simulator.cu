@@ -8,11 +8,16 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <cuda_gl_interop.h>
+#include <thrust/device_vector.h>
+#include <thrust/sort.h>
 
 using namespace slime;
+using namespace slime::SPHSimulatorConstants;
 using namespace std;
 
-SPHSimulator::SPHSimulator(const unsigned int vbo) {
+SPHSimulator::SPHSimulator(const unsigned int vbo)
+    : hashKeys(SPHSimulatorConstants::NUM_PARTICLES, 1),
+      hashIndices(SPHSimulatorConstants::NUM_PARTICLES, 1) { // correct?
   random_device rd;
   mt19937 gen(rd());
   uniform_real_distribution<> dis(-0.1f, 0.1f);
@@ -45,6 +50,9 @@ SPHSimulator::SPHSimulator(const unsigned int vbo) {
              sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES,
              cudaMemcpyHostToDevice);
   cudaGraphicsGLRegisterBuffer(&cudaVBOResource, vbo, cudaGraphicsMapFlagsNone);
+
+  raw_hashKeys = thrust::raw_pointer_cast(hashKeys.data());
+  raw_hashIndices = thrust::raw_pointer_cast(hashIndices.data());
 }
 
 SPHSimulator::~SPHSimulator() {
@@ -94,7 +102,15 @@ void SPHSimulator::updateParticles(double deltaTime) {
                                                          deltaTime);
   cudaDeviceSynchronize();
 
-  updateSpatialHash<<<blockSize, threadSize>>>(d_particles);
+  updateSpatialHashDevice<<<blockSize, threadSize>>>(d_particles, raw_hashKeys,
+                                                     raw_hashIndices);
+  cudaDeviceSynchronize();
+
+  thrust::sort_by_key(thrust::device, hashKeys.begin(), hashKeys.end(),
+                      hashIndices.begin());
+
+  updateHashBucketDevice<<<blockSize, threadSize>>>(raw_hashKeys,
+                                                    raw_hashIndices);
   cudaDeviceSynchronize();
 
   /* Copy Particle Positions to VBO positions array */
@@ -103,7 +119,7 @@ void SPHSimulator::updateParticles(double deltaTime) {
   size_t size;
   cudaGraphicsResourceGetMappedPointer((void **)&d_positions, &size,
                                        cudaVBOResource);
-  copyPositionToVBO<<<blockSize, threadSize>>>(d_positions, d_particles);
+  copyPositionToVBODevice<<<blockSize, threadSize>>>(d_positions, d_particles);
   cudaDeviceSynchronize();
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess) {

@@ -7,11 +7,9 @@
 #include "sph_simulator.cuh"
 
 namespace slime {
-extern __device__ float poly6KernelDevice(float3 r, float h);
-extern __device__ float spikyKernelDevice(float3 r, float h);
-extern __device__ float gradientSpikyKernelDevice(float3 r, float h);
-extern __device__ float viscosityKernelDevice(float3 r, float h);
-extern __device__ float laplacianViscosityKernelDevice(float3 r, float h);
+
+/* TODO: update naming of the global kernels(remove 'Device' and add something)
+ */
 
 extern __global__ void updateScalarFieldDevice(float *colorFieldDevice,
                                                Particle *particlesDevice,
@@ -40,10 +38,14 @@ extern __global__ void computeWallConstraintDevice(Particle *particlesDevice,
 extern __global__ void computePositionDevice(Particle *particlesDevice,
                                              double deltaTime);
 
-extern __global__ void updateSpatialHash(Particle *particlesDevice);
+extern __global__ void updateSpatialHashDevice(Particle *particlesDevice,
+                                               unsigned int *hashKeys,
+                                               unsigned int *hashIndices);
+extern __global__ void updateHashBucketDevice(unsigned int *hashKeys,
+                                              unsigned int *hashIndices);
 
-extern __global__ void copyPositionToVBO(float *d_positions,
-                                         Particle *particlesDevice);
+extern __global__ void copyPositionToVBODevice(float *d_positions,
+                                               Particle *particlesDevice);
 } // namespace slime
 
 #endif
