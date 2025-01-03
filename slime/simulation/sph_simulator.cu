@@ -78,6 +78,8 @@ void SPHSimulator::updateParticles(double deltaTime) {
   cout << "check2" << endl;
   thrust::sort_by_key(hashKeys.begin(), hashKeys.end(), hashIndices.begin());
 
+  raw_hashKeys = thrust::raw_pointer_cast(hashKeys.data());
+  raw_hashIndices = thrust::raw_pointer_cast(hashIndices.data());
   cout << "check3" << endl;
   updateHashBucketDevice<<<blockSize, threadSize>>>(raw_hashKeys,
                                                     raw_hashIndices);
