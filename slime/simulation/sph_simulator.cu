@@ -70,6 +70,19 @@ void SPHSimulator::updateParticles(double deltaTime) {
   const int blockSize =
       (SPHSimulatorConstants::NUM_PARTICLES + threadSize - 1) / threadSize;
 
+  cout << "check1" << endl;
+  updateSpatialHashDevice<<<blockSize, threadSize>>>(d_particles, raw_hashKeys,
+                                                     raw_hashIndices);
+  cudaDeviceSynchronize();
+
+  cout << "check2" << endl;
+  thrust::sort_by_key(hashKeys.begin(), hashKeys.end(), hashIndices.begin());
+
+  cout << "check3" << endl;
+  updateHashBucketDevice<<<blockSize, threadSize>>>(raw_hashKeys,
+                                                    raw_hashIndices);
+  cudaDeviceSynchronize();
+
   computeDensityDevice<<<blockSize, threadSize>>>(d_particles);
   cudaDeviceSynchronize();
 
@@ -102,17 +115,7 @@ void SPHSimulator::updateParticles(double deltaTime) {
                                                          deltaTime);
   cudaDeviceSynchronize();
 
-  updateSpatialHashDevice<<<blockSize, threadSize>>>(d_particles, raw_hashKeys,
-                                                     raw_hashIndices);
-  cudaDeviceSynchronize();
-
-  thrust::sort_by_key(thrust::device, hashKeys.begin(), hashKeys.end(),
-                      hashIndices.begin());
-
-  updateHashBucketDevice<<<blockSize, threadSize>>>(raw_hashKeys,
-                                                    raw_hashIndices);
-  cudaDeviceSynchronize();
-
+  cout << "check4" << endl;
   /* Copy Particle Positions to VBO positions array */
   cudaGraphicsMapResources(1, &cudaVBOResource, 0);
   float *d_positions;
@@ -121,6 +124,7 @@ void SPHSimulator::updateParticles(double deltaTime) {
                                        cudaVBOResource);
   copyPositionToVBODevice<<<blockSize, threadSize>>>(d_positions, d_particles);
   cudaDeviceSynchronize();
+
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess) {
     printf("cuda kernel error: %s\n", cudaGetErrorString(err));

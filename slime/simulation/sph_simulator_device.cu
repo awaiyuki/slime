@@ -3,7 +3,6 @@
 #include <math.h>
 #define PI 3.141592653589793238462643
 #define EPSILON 0.000001
-#include <thrust/sort.h>
 
 using namespace slime;
 using namespace slime::SPHSimulatorConstants;
