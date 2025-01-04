@@ -7,11 +7,6 @@
 using namespace slime;
 using namespace slime::SPHSimulatorConstants;
 
-__device__ int hashKeys[NUM_PARTICLES];
-__device__ int hashIndices[NUM_PARTICLES];
-__device__ unsigned int bucket_start[NUM_PARTICLES];
-__device__ unsigned int bucket_end[NUM_PARTICLES];
-
 __device__ unsigned int hash(int3 cell, unsigned int seed = 73856093) {
   unsigned int hash = seed;
   hash ^= (unsigned int)cell.x * 73856093;
@@ -26,7 +21,7 @@ __device__ int3 toCellPosition(float3 &position) {
                    floor((position.z + 1.0f) / 2.0f * GRID_SIZE));
 }
 
-__device__ int keyFromHash(unsigned int &hashKey) {
+__device__ unsigned int keyFromHash(unsigned int &hashKey) {
   return hashKey % NUM_PARTICLES;
 }
 
@@ -101,7 +96,10 @@ __global__ void slime::updateScalarFieldDevice(float *colorFieldDevice,
   // colorFieldDevice[idx] = dx * dx + dy * dy + dz * dz - 0.5f * 0.5f;
 }
 
-__global__ void slime::computeDensityDevice(Particle *particlesDevice) {
+__global__ void slime::computeDensityDevice(Particle *particlesDevice,
+                                            unsigned int *hashIndices,
+                                            unsigned int *bucketStart,
+                                            unsigned int *bucketEnd) {
 
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
   if (idx >= NUM_PARTICLES)
@@ -112,13 +110,17 @@ __global__ void slime::computeDensityDevice(Particle *particlesDevice) {
 
   int3 cellPosition = toCellPosition(i.position);
   /* Neighbour search using spatial hash */
-  for (int nx = -1; nx <= -1; nx++) {
-    for (int ny = -1; ny <= -1; ny++) {
-      for (int nz = -1; nz <= -1; nz++) {
-        unsigned int key =
+  for (int nx = -1; nx <= 1; nx++) {
+    for (int ny = -1; ny <= 1; ny++) {
+      for (int nz = -1; nz <= 1; nz++) {
+        unsigned int cellHash =
             hash(toCellPosition(i.position + make_float3(nx, ny, nz)));
-        for (int bucketIdx = bucket_start[key]; bucketIdx < bucket_end[key];
+        unsigned int key = keyFromHash(cellHash);
+        // printf("%d %d %d\n", key, bucketStart[key], bucketStart[key]);
+        for (int bucketIdx = bucketStart[key]; bucketIdx < bucketEnd[key];
              bucketIdx++) {
+          if (bucketIdx == -1)
+            break;
           // TODO: implement
           if (idx == hashIndices[bucketIdx])
             continue;
@@ -138,7 +140,11 @@ __global__ void slime::computePressureDevice(Particle *particlesDevice) {
   auto &i = particlesDevice[idx];
   i.pressure = GAS_CONSTANT * (i.density - REST_DENSITY);
 }
+
 __global__ void slime::computePressureForceDevice(Particle *particlesDevice,
+                                                  unsigned int *hashIndices,
+                                                  unsigned int *bucketStart,
+                                                  unsigned int *bucketEnd,
                                                   double deltaTime) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
   if (idx >= NUM_PARTICLES)
@@ -150,13 +156,15 @@ __global__ void slime::computePressureForceDevice(Particle *particlesDevice,
   int3 cellPosition = toCellPosition(i.position);
 
   /* Neighbour search using spatial hash */
-  for (int nx = -1; nx <= -1; nx++) {
-    for (int ny = -1; ny <= -1; ny++) {
-      for (int nz = -1; nz <= -1; nz++) {
+  for (int nx = -1; nx <= 1; nx++) {
+    for (int ny = -1; ny <= 1; ny++) {
+      for (int nz = -1; nz <= 1; nz++) {
         unsigned int key =
             hash(toCellPosition(i.position + make_float3(nx, ny, nz)));
-        for (int bucketIdx = bucket_start[key]; bucketIdx < bucket_end[key];
+        for (int bucketIdx = bucketStart[key]; bucketIdx < bucketEnd[key];
              bucketIdx++) {
+          if (bucketIdx == -1)
+            break;
           // TODO: implement
           if (idx == hashIndices[bucketIdx])
             continue;
@@ -178,6 +186,9 @@ __global__ void slime::computePressureForceDevice(Particle *particlesDevice,
 }
 
 __global__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
+                                                   unsigned int *hashIndices,
+                                                   unsigned int *bucketStart,
+                                                   unsigned int *bucketEnd,
                                                    double deltaTime) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
   if (idx >= NUM_PARTICLES)
@@ -186,13 +197,15 @@ __global__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
   float3 viscosityForce = make_float3(0.0f, 0.0f, 0.0f);
 
   /* Neighbour search using spatial hash */
-  for (int nx = -1; nx <= -1; nx++) {
-    for (int ny = -1; ny <= -1; ny++) {
-      for (int nz = -1; nz <= -1; nz++) {
+  for (int nx = -1; nx <= 1; nx++) {
+    for (int ny = -1; ny <= 1; ny++) {
+      for (int nz = -1; nz <= 1; nz++) {
         unsigned int key =
             hash(toCellPosition(i.position + make_float3(nx, ny, nz)));
-        for (int bucketIdx = bucket_start[key]; bucketIdx < bucket_end[key];
+        for (int bucketIdx = bucketStart[key]; bucketIdx < bucketEnd[key];
              bucketIdx++) {
+          if (bucketIdx == -1)
+            break;
           // TODO: implement
           if (idx == hashIndices[bucketIdx])
             continue;
@@ -323,20 +336,22 @@ __global__ void slime::updateSpatialHashDevice(Particle *particlesDevice,
 }
 
 __global__ void slime::updateHashBucketDevice(unsigned int *hashKeys,
-                                              unsigned int *hashIndices) {
+                                              unsigned int *hashIndices,
+                                              unsigned int *bucketStart,
+                                              unsigned int *bucketEnd) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
 
   if (idx >= NUM_PARTICLES)
     return;
 
   if (idx == 0 || hashKeys[idx] != hashKeys[idx - 1]) {
-    bucket_start[hashKeys[idx]] = idx;
+    bucketStart[hashKeys[idx]] = idx;
   }
 
   if (idx == NUM_PARTICLES - 1) {
-    bucket_end[hashKeys[idx]] = hashIndices[idx] + 1;
+    bucketEnd[hashKeys[idx]] = hashIndices[idx] + 1;
   } else if (hashKeys[idx] != hashKeys[idx + 1]) {
-    bucket_end[hashKeys[idx]] = idx + 1;
+    bucketEnd[hashKeys[idx]] = idx + 1;
   }
 }
 

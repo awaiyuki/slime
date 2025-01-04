@@ -16,14 +16,23 @@ extern __global__ void updateScalarFieldDevice(float *colorFieldDevice,
                                                int gridSize,
                                                float maxColorQuantity);
 
-extern __global__ void computeDensityDevice(Particle *particlesDevice);
+extern __global__ void computeDensityDevice(Particle *particlesDevice,
+                                            unsigned int *hashIndices,
+                                            unsigned int *bucketStart,
+                                            unsigned int *bucketEnd);
 
 extern __global__ void computePressureDevice(Particle *particlesDevice);
 
 extern __global__ void computePressureForceDevice(Particle *particlesDevice,
+                                                  unsigned int *hashIndices,
+                                                  unsigned int *bucketStart,
+                                                  unsigned int *bucketEnd,
                                                   double deltaTime);
 
 extern __global__ void computeViscosityForceDevice(Particle *particlesDevice,
+                                                   unsigned int *hashIndices,
+                                                   unsigned int *bucketStart,
+                                                   unsigned int *bucketEnd,
                                                    double deltaTime);
 
 extern __global__ void computeSurfaceTensionDevice(Particle *particlesDevice,
@@ -42,7 +51,9 @@ extern __global__ void updateSpatialHashDevice(Particle *particlesDevice,
                                                unsigned int *hashKeys,
                                                unsigned int *hashIndices);
 extern __global__ void updateHashBucketDevice(unsigned int *hashKeys,
-                                              unsigned int *hashIndices);
+                                              unsigned int *hashIndices,
+                                              unsigned int *bucketStart,
+                                              unsigned int *bucketEnd);
 
 extern __global__ void copyPositionToVBODevice(float *d_positions,
                                                Particle *particlesDevice);

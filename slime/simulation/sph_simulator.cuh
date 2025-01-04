@@ -16,10 +16,10 @@ namespace slime {
 
 struct Particle {
   int id;
-  float3 position, velocity, acceleration;
+  float3 position, velocity;
   float density, pressure, mass;
-  float4 color;
-  float life;
+  // float4 color;
+  // float life;
 };
 
 class SPHSimulator {
@@ -39,15 +39,17 @@ private:
 
   thrust::device_vector<unsigned int> hashKeys;
   thrust::device_vector<unsigned int> hashIndices;
+  thrust::device_vector<unsigned int> bucketStart;
+  thrust::device_vector<unsigned int> bucketEnd;
 
   unsigned int *raw_hashKeys;
   unsigned int *raw_hashIndices;
+  unsigned int *raw_bucketStart;
+  unsigned int *raw_bucketEnd;
 
   Particle *d_particles;
   cudaGraphicsResource_t cudaVBOResource;
 
-  static constexpr int GRID_SIZE = SPHSimulatorConstants::GRID_SIZE;
-  float scalarField[GRID_SIZE * GRID_SIZE * GRID_SIZE];
   float *d_scalarField;
 
   std::unique_ptr<MarchingCubes> marchingCubes;

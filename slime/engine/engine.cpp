@@ -8,7 +8,7 @@ Engine::Engine() { this->renderer = make_unique<Renderer>(); }
 
 Engine::~Engine() {
   glfwTerminate();
-  cout << "slime: destroy Engine." << endl;
+  cout << "slime: Destoying the Engine." << endl;
 }
 
 void Engine::init() {}

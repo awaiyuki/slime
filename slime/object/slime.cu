@@ -43,12 +43,11 @@ void Slime::setup() {
   glBindVertexArray(VAO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-  float positions[SPHSimulatorConstants::NUM_PARTICLES * 3];
-
   if (renderMode == "point") {
+    std::vector<float> positions(SPHSimulatorConstants::NUM_PARTICLES * 3);
     glBufferData(GL_ARRAY_BUFFER,
                  sizeof(float) * SPHSimulatorConstants::NUM_PARTICLES * 3,
-                 positions, GL_DYNAMIC_DRAW);
+                 positions.data(), GL_DYNAMIC_DRAW);
 
   } else {
     const int gridSize = SPHSimulatorConstants::GRID_SIZE;

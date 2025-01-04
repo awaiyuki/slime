@@ -42,7 +42,7 @@ inline __device__ __host__ float3 &operator+=(float3 &a, float3 &b) {
 inline __device__ __host__ float length(const float3 &a) {
   return sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
 }
-inline __device__ __host__ float3 &normalize(const float3 &a) {
+inline __device__ __host__ float3 normalize(const float3 &a) {
   return a / length(a);
 }
 
