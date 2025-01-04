@@ -1,6 +1,7 @@
 #include "sph_simulator_device.cuh"
 #include <slime/constants/sph_simulator_constants.h>
 #include <math.h>
+#include <slime/utility/cuda_math.cuh>
 #define PI 3.141592653589793238462643
 #define EPSILON 0.000001
 
@@ -33,6 +34,16 @@ __device__ float poly6KernelDevice(float3 r, float h) {
   float result = 315.0f / (64.0f * PI * pow(h, 9)) *
                  pow(h * h - rMagnitude * rMagnitude, 3);
   return result;
+}
+
+__device__ float3 gradientPoly6Device(float3 r, float h) {
+  float rLen = length(r);
+  if (rLen > h || rLen < EPSILON)
+    return make_float3(0, 0, 0);
+  float base = 945.0f / (32.0f * PI * powf(h, 9.0f));
+  float scalar = base * powf(h * h - rLen * rLen, 2);
+  float3 grad = scalar * r;
+  return -grad;
 }
 
 __device__ float spikyKernelDevice(float3 r, float h) { return 0.0f; }
@@ -121,6 +132,8 @@ __global__ void slime::computeDensityDevice(Particle *particlesDevice,
              bucketIdx++) {
           if (bucketIdx == -1)
             break;
+          // printf("bucketIdx: %d, hashIndices: %d\n", bucketIdx,
+          //  hashIndices[bucketIdx]);
           // TODO: implement
           if (idx == hashIndices[bucketIdx])
             continue;
@@ -159,8 +172,9 @@ __global__ void slime::computePressureForceDevice(Particle *particlesDevice,
   for (int nx = -1; nx <= 1; nx++) {
     for (int ny = -1; ny <= 1; ny++) {
       for (int nz = -1; nz <= 1; nz++) {
-        unsigned int key =
+        unsigned int cellHash =
             hash(toCellPosition(i.position + make_float3(nx, ny, nz)));
+        unsigned int key = keyFromHash(cellHash);
         for (int bucketIdx = bucketStart[key]; bucketIdx < bucketEnd[key];
              bucketIdx++) {
           if (bucketIdx == -1)
@@ -200,8 +214,9 @@ __global__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
   for (int nx = -1; nx <= 1; nx++) {
     for (int ny = -1; ny <= 1; ny++) {
       for (int nz = -1; nz <= 1; nz++) {
-        unsigned int key =
+        unsigned int cellHash =
             hash(toCellPosition(i.position + make_float3(nx, ny, nz)));
+        unsigned int key = keyFromHash(cellHash);
         for (int bucketIdx = bucketStart[key]; bucketIdx < bucketEnd[key];
              bucketIdx++) {
           if (bucketIdx == -1)
@@ -221,23 +236,113 @@ __global__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
       }
     }
   }
-  viscosityForce *= 0.1f; // VISCOSITY_COEFFICIENT
+  viscosityForce *= 0.1f;
+  // slime::SPHSimulatorConstants::VISCOSITY_COEFFICIENT
 
   auto acceleration = viscosityForce / i.mass;
   auto deltaVelocity = acceleration * float(deltaTime);
   i.velocity += deltaVelocity;
 }
+__device__ constexpr float SURFACE_TENSION_COEFFICIENT = 0.072f;
+__device__ constexpr float SURFACE_NORMAL_THRESHOLD = 0.1f;
+__device__ constexpr float EPS_CURVATURE = 1e-5f;
 
 __global__ void slime::computeSurfaceTensionDevice(Particle *particlesDevice,
+                                                   unsigned int *hashIndices,
+                                                   unsigned int *bucketStart,
+                                                   unsigned int *bucketEnd,
                                                    double deltaTime) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
   if (idx >= NUM_PARTICLES)
     return;
-  auto &i = particlesDevice[idx];
 
-  // TODO: implement surface tension
+  Particle &pi = particlesDevice[idx];
+  float ci = pi.density / REST_DENSITY;
 
-  return;
+  float3 normal_i = make_float3(0.0f, 0.0f, 0.0f);
+
+  int3 cellPos = toCellPosition(pi.position);
+  for (int nx = -1; nx <= 1; nx++) {
+    for (int ny = -1; ny <= 1; ny++) {
+      for (int nz = -1; nz <= 1; nz++) {
+        unsigned int cellHash =
+            hash(toCellPosition(pi.position + make_float3(nx, ny, nz)));
+        unsigned int key = keyFromHash(cellHash);
+
+        for (int bucketIdx = bucketStart[key]; bucketIdx < bucketEnd[key];
+             bucketIdx++) {
+          if (bucketIdx == -1)
+            break;
+          if (idx == hashIndices[bucketIdx])
+            continue;
+
+          Particle &pj = particlesDevice[hashIndices[bucketIdx]];
+
+          float cj = pj.density / REST_DENSITY;
+
+          float3 r = pi.position - pj.position;
+          float rLen = length(r);
+          if (rLen > SMOOTHING_RADIUS || rLen < EPSILON)
+            continue;
+
+          float3 gradW = gradientPoly6Device(r, SMOOTHING_RADIUS);
+
+          normal_i += (pj.mass / pj.density) * cj * gradW;
+        }
+      }
+    }
+  }
+
+  float normLen = length(normal_i);
+
+  if (normLen > SURFACE_NORMAL_THRESHOLD) {
+    float curvature_i = 0.0f;
+
+    for (int nx = -1; nx <= 1; nx++) {
+      for (int ny = -1; ny <= 1; ny++) {
+        for (int nz = -1; nz <= 1; nz++) {
+          unsigned int cellHash =
+              hash(toCellPosition(pi.position + make_float3(nx, ny, nz)));
+          unsigned int key = keyFromHash(cellHash);
+
+          for (int bucketIdx = bucketStart[key]; bucketIdx < bucketEnd[key];
+               bucketIdx++) {
+            if (bucketIdx == -1)
+              break;
+            if (idx == hashIndices[bucketIdx])
+              continue;
+
+            Particle &pj = particlesDevice[hashIndices[bucketIdx]];
+
+            float3 r = pi.position - pj.position;
+            float rLen = length(r);
+            if (rLen > SMOOTHING_RADIUS || rLen < EPSILON)
+              continue;
+
+            float cj = pj.density / REST_DENSITY;
+            float3 gradW = gradientPoly6Device(r, SMOOTHING_RADIUS);
+
+            float3 normal_j = (pj.mass / pj.density) * cj * gradW;
+            float normal_j_len = length(normal_j);
+            if (normal_j_len < EPSILON)
+              continue;
+
+            float3 n_j_norm = normal_j / normal_j_len;
+
+            curvature_i -= (pj.mass / pj.density) * dot(n_j_norm, gradW);
+          }
+        }
+      }
+    }
+
+    float3 n_i_dir =
+        (normLen > EPS_CURVATURE) ? (normal_i / normLen) : make_float3(0, 0, 0);
+
+    float3 F_st = -SURFACE_TENSION_COEFFICIENT * curvature_i * n_i_dir;
+    float3 a_st = F_st / pi.mass;
+
+    pi.velocity += a_st * static_cast<float>(deltaTime);
+  }
 }
 
 __global__ void slime::computeGravityDevice(Particle *particlesDevice,
@@ -340,7 +445,6 @@ __global__ void slime::updateHashBucketDevice(unsigned int *hashKeys,
                                               unsigned int *bucketStart,
                                               unsigned int *bucketEnd) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-
   if (idx >= NUM_PARTICLES)
     return;
 

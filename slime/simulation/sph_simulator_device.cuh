@@ -36,6 +36,9 @@ extern __global__ void computeViscosityForceDevice(Particle *particlesDevice,
                                                    double deltaTime);
 
 extern __global__ void computeSurfaceTensionDevice(Particle *particlesDevice,
+                                                   unsigned int *hashIndices,
+                                                   unsigned int *bucketStart,
+                                                   unsigned int *bucketEnd,
                                                    double deltaTime);
 
 extern __global__ void computeGravityDevice(Particle *particlesDevice,

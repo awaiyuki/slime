@@ -95,10 +95,9 @@ void SPHSimulator::updateParticles(double deltaTime) {
 
   printCudaError("sortbykey");
   cout << "check3" << endl;
+
   raw_hashKeys = thrust::raw_pointer_cast(hashKeys.data());
   raw_hashIndices = thrust::raw_pointer_cast(hashIndices.data());
-  raw_bucketStart = thrust::raw_pointer_cast(bucketStart.data());
-  raw_bucketEnd = thrust::raw_pointer_cast(bucketEnd.data());
 
   updateHashBucketDevice<<<blockSize, threadSize>>>(
       raw_hashKeys, raw_hashIndices, raw_bucketStart, raw_bucketEnd);
@@ -118,19 +117,16 @@ void SPHSimulator::updateParticles(double deltaTime) {
       d_particles, raw_hashIndices, raw_bucketStart, raw_bucketEnd, deltaTime);
   cudaDeviceSynchronize();
 
+  printCudaError("computePressureForce");
   computeViscosityForceDevice<<<blockSize, threadSize>>>(
       d_particles, raw_hashIndices, raw_bucketStart, raw_bucketEnd, deltaTime);
   cudaDeviceSynchronize();
+  printCudaError("computeViscosityForce");
 
-  computeSurfaceTensionDevice<<<blockSize, threadSize>>>(d_particles,
-                                                         deltaTime);
+  computeSurfaceTensionDevice<<<blockSize, threadSize>>>(
+      d_particles, raw_hashIndices, raw_bucketStart, raw_bucketEnd, deltaTime);
   cudaDeviceSynchronize();
-
-  /*
-  computeSurfaceTensionForce<<<blockSize, threadSize>>>(d_particles,
-                                                         deltaTime);
-  cudaDeviceSynchronize();
-  */
+  printCudaError("computeSurfaceTensionForce");
 
   computeGravityDevice<<<blockSize, threadSize>>>(d_particles, deltaTime);
   cudaDeviceSynchronize();
@@ -159,7 +155,7 @@ void SPHSimulator::updateParticles(double deltaTime) {
 void SPHSimulator::updateScalarField() {
   /* Need to debug */
 
-  const int threadSize = 16;
+  const int threadSize = 8;
   dim3 dimBlock(threadSize, threadSize, threadSize);
   const int blockSize = (GRID_SIZE + threadSize - 1) / threadSize;
   dim3 dimGrid(blockSize, blockSize, blockSize);

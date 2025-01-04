@@ -24,6 +24,15 @@ MarchingCubes::MarchingCubes(int _gridSize) : gridSize(_gridSize) {
   cudaMalloc((void **)&d_vertexDataPtr, sizeof(VertexData));
   cudaMemcpy(d_vertexDataPtr, &tempVertexData, sizeof(VertexData),
              cudaMemcpyHostToDevice);
+
+  /* copy constant arrays */
+  cudaMemcpyToSymbol(d_triangulation, MarchingCubesTables::triangulation,
+                     sizeof(int) * 256 * 16);
+  cudaMemcpyToSymbol(d_cornerIndexFromEdge,
+                     MarchingCubesTables::cornerIndexFromEdge,
+                     sizeof(int) * 12 * 2);
+
+  cudaMalloc((void **)&d_counter, sizeof(int));
 }
 
 MarchingCubes::~MarchingCubes() {
@@ -40,14 +49,6 @@ MarchingCubes::~MarchingCubes() {
 
 VertexData MarchingCubes::march(float *d_scalarField, float surfaceLevel) {
 
-  /* copy constant arrays */
-  cudaMemcpyToSymbol(d_triangulation, MarchingCubesTables::triangulation,
-                     sizeof(int) * 256 * 16);
-  cudaMemcpyToSymbol(d_cornerIndexFromEdge,
-                     MarchingCubesTables::cornerIndexFromEdge,
-                     sizeof(int) * 12 * 2);
-
-  cudaMalloc((void **)&d_counter, sizeof(int));
   cudaMemset(d_counter, 0, sizeof(int));
 
   const int threadSize = 8;

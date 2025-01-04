@@ -11,6 +11,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <slime/simulation/sph_simulator.cuh>
 #include <slime/renderer/marching_cubes.cuh>
+#include <glad/gl.h>
+#include <GLFW/glfw3.h>
 
 namespace slime {
 struct Edge {
@@ -20,8 +22,9 @@ struct Edge {
 class Slime : public Object {
 
 public:
-  Slime();
-  Slime(float initX, float initY, float initZ);
+  Slime(const std::string &renderMode = "cube");
+  Slime(float initX, float initY, float initZ,
+        const std::string &renderMode = "cube");
   ~Slime();
   void setup();
   void render(double deltaTime);
@@ -37,6 +40,9 @@ public:
 private:
   std::unique_ptr<SPHSimulator> sphSimulator;
   std::string renderMode;
+  const double fixedTimeStep = 0.016; // 고정된 시간 간격 (60 FPS 기준)
+  double accumulator = 0.0;
+  double previousTime = glfwGetTime();
 };
 } // namespace slime
 

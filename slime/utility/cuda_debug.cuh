@@ -1,3 +1,6 @@
+#ifndef CUDA_DEBUG_CUH
+#define CUDA_DEBUG_CUH
+
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cstdio>
@@ -10,3 +13,4 @@ void printCudaError(const char *errorTitle) {
   }
 }
 } // namespace slime
+#endif

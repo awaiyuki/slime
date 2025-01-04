@@ -16,23 +16,27 @@
 using namespace slime;
 using namespace std;
 
-Slime::Slime() {
+Slime::Slime(const std::string &renderMode) {
   initX = 0.0f;
   initY = 0.0f;
   initZ = 0.0f;
+  this->renderMode = renderMode;
+  cout << "renderMode: " << renderMode << endl;
 }
 
-Slime::Slime(float _initX, float _initY, float _initZ) {
+Slime::Slime(float _initX, float _initY, float _initZ,
+             const std::string &renderMode) {
   initX = _initX;
   initY = _initY;
   initZ = _initZ;
+  this->renderMode = renderMode;
+  cout << "renderMode: " << renderMode << endl;
 }
 
 Slime::~Slime() {}
 
 void Slime::setup() {
   cout << "setup Slime" << endl;
-  this->renderMode = "cube";
   this->shader = new Shader("./shaders/slime.vert", "./shaders/slime.frag");
   shader->use();
 
@@ -68,7 +72,12 @@ void Slime::render(double deltaTime) {
   //   cout << "render Slime" << endl;
 
   /* SPH Simulation */
+  // accumulator += deltaTime;
+  // while (accumulator >= fixedTimeStep) {
+  //   accumulator -= fixedTimeStep;
+  // }
   sphSimulator->updateParticles(deltaTime);
+
   if (renderMode == "point") {
 
     // Render with points
