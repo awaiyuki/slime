@@ -37,7 +37,7 @@ void Plane::setup() {
   /* Set Uniforms */
   shader->setInt("texture0", 0);
   shader->setVec3("material.ambient", 0.1f, 0.6f, 0.3f);
-  shader->setVec3("material.diffuse", 0.1f, 0.6f, 0.3f);
+  shader->setVec3("material.diffuse", 1.0f, 1.0f, 1.0f);
   shader->setVec3("material.specular", 0.5f, 0.5f, 0.5f);
   shader->setFloat("material.shininess", 32.0f);
 
@@ -115,7 +115,7 @@ void Plane::render(double deltaTime) {
 
   glm::vec3 lightPos(1.1f, 3.0f, 2.0f);
   glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
-  glm::vec3 objectColor(0.1f, 1.0f, 0.3f);
+  glm::vec3 objectColor(0.1f, 1.0f, 1.0f);
   shader->setVec3("lightPos", lightPos);
   shader->setVec3("viewPos", cameraPosition);
   shader->setVec3("lightColor", lightColor);

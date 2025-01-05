@@ -52,6 +52,7 @@ void Slime::setup() {
     glBufferData(GL_ARRAY_BUFFER,
                  sizeof(float) * SPHSimulatorConstants::NUM_PARTICLES * 3,
                  positions.data(), GL_DYNAMIC_DRAW);
+    cout << "point render set" << endl;
 
   } else {
     const int gridSize = SPHSimulatorConstants::GRID_SIZE;
@@ -80,6 +81,7 @@ void Slime::render(double deltaTime) {
 
   if (renderMode == "point") {
 
+    cout << "point render " << endl;
     // Render with points
     const int32_t pointCount = SPHSimulatorConstants::NUM_PARTICLES;
 

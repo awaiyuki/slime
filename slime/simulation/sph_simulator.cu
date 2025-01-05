@@ -20,8 +20,8 @@ using namespace std;
 SPHSimulator::SPHSimulator(const unsigned int vbo)
     : hashKeys(SPHSimulatorConstants::NUM_PARTICLES, 0),
       hashIndices(SPHSimulatorConstants::NUM_PARTICLES, 0),
-      bucketStart(SPHSimulatorConstants::NUM_PARTICLES, 0),
-      bucketEnd(SPHSimulatorConstants::NUM_PARTICLES, 0) {
+      bucketStart(SPHSimulatorConstants::NUM_PARTICLES, -1),
+      bucketEnd(SPHSimulatorConstants::NUM_PARTICLES, -1) {
   random_device rd;
   mt19937 gen(rd());
   uniform_real_distribution<> dis(-0.1f, 0.1f);
@@ -82,19 +82,18 @@ void SPHSimulator::updateParticles(double deltaTime) {
 
   /* Updating Spatial Hashing */
 
-  cout << "check1" << endl;
   updateSpatialHashDevice<<<blockSize, threadSize>>>(d_particles, raw_hashKeys,
                                                      raw_hashIndices);
   cudaDeviceSynchronize();
 
   printCudaError("updateSpatialHash or before");
 
-  cout << "check2" << endl;
+  // cout << "check2" << endl;
   thrust::sort_by_key(hashKeys.begin(), hashKeys.end(), hashIndices.begin());
   cudaDeviceSynchronize();
 
   printCudaError("sortbykey");
-  cout << "check3" << endl;
+  // cout << "check3" << endl;
 
   raw_hashKeys = thrust::raw_pointer_cast(hashKeys.data());
   raw_hashIndices = thrust::raw_pointer_cast(hashIndices.data());
@@ -140,7 +139,7 @@ void SPHSimulator::updateParticles(double deltaTime) {
 
   /* Copying Particle Positions to VBO positions array */
 
-  cout << "check4" << endl;
+  // cout << "check4" << endl;
   cudaGraphicsMapResources(1, &cudaVBOResource, 0);
   float *d_positions;
   size_t size;

@@ -1,13 +1,14 @@
 #ifndef SPH_SIMULATOR_CONSTANTS_H
 #define SPH_SIMULATOR_CONSTANTS_H
 namespace slime::SPHSimulatorConstants {
-constexpr int NUM_PARTICLES = 20000; // spatial hash 이후 10^6개 정도로
-constexpr float PARTICLE_MASS = 0.1f;
-constexpr float GAS_CONSTANT = 0.0001f;
+constexpr int NUM_PARTICLES = 100000;
+constexpr float PARTICLE_MASS = 1.0f;
 constexpr float REST_DENSITY = 1.0f;
+constexpr float GAS_CONSTANT = 0.000001f;
 constexpr float VISCOSITY_COEFFICIENT =
     0.1f; // 어째서인지 참조를 못해서 sph_simulator_device.cu 코드 내에서 magic
-          // number로 넣음.
+// number로 넣음.
+constexpr float GRAVITATIONAL_ACCELERATION = -0.98f;
 constexpr float SMOOTHING_RADIUS = 1.0f; // 현재 grid_size로 결정됨
 constexpr float SURFACE_LEVEL = 0.5f;
 constexpr int GRID_SIZE =
