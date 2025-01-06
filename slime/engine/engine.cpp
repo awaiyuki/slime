@@ -19,6 +19,6 @@ void Engine::run() {
   this->renderer->clear();
 }
 
-void Engine::registerObject(Object *object) {
-  this->renderer->registerObject(object);
+void Engine::registerWorldObject(WorldObject *object) {
+  this->renderer->registerWorldObject(object);
 }

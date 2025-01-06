@@ -7,10 +7,10 @@
 #include <slime/renderer/shader.h>
 
 namespace slime {
-class Object {
+class WorldObject {
 public:
-  Object();
-  ~Object();
+  WorldObject();
+  ~WorldObject();
   virtual void setup() = 0;
   virtual void render(double deltaTime) = 0;
   virtual void clear() = 0;

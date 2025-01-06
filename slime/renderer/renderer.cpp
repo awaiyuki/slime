@@ -57,7 +57,7 @@ Renderer::~Renderer() {
 
 void Renderer::setup() {
 
-  /* Setup all objects in Object Pool */
+  /* Setup all objects in WorldObject Pool */
   for (auto itr = objectPool.begin(); itr != objectPool.end(); itr++) {
     (*itr)->setup();
   }
@@ -83,7 +83,7 @@ void Renderer::render() {
     camera->updateView();
     camera->updateProjection();
 
-    /* Render all objects in Object Pool */
+    /* Render all objects in WorldObject Pool */
     for (auto itr = objectPool.begin(); itr != objectPool.end(); itr++) {
       (*itr)->updateView(
           camera->view); // Update view transform matrix of objects
@@ -104,7 +104,9 @@ void Renderer::clear() {
   }
 }
 
-void Renderer::registerObject(Object *object) { objectPool.push_back(object); }
+void Renderer::registerWorldObject(WorldObject *object) {
+  objectPool.push_back(object);
+}
 
 void Renderer::framebufferSizeCallback(GLFWwindow *window, int width,
                                        int height) {

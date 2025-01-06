@@ -2,7 +2,7 @@
 #define ENGINE_H
 
 #include <slime/renderer/renderer.h>
-#include <slime/object/object.h>
+#include <slime/world_object/world_object.h>
 
 namespace slime {
 
@@ -15,7 +15,7 @@ public:
   ~Engine();
   void init();
   void run();
-  void registerObject(Object *object);
+  void registerWorldObject(WorldObject *object);
 };
 
 } // namespace slime

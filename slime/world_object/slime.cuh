@@ -2,7 +2,7 @@
 #define SLIME_H
 
 #include <slime/renderer/shader.h>
-#include "object.h"
+#include "world_object.h"
 #include <vector>
 #include <memory>
 #include <string>
@@ -19,7 +19,7 @@ struct Edge {
   glm::vec3 p1, p2;
 };
 
-class Slime : public Object {
+class Slime : public WorldObject {
 
 public:
   Slime(const std::string &renderMode = "cube");

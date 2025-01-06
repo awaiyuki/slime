@@ -4,13 +4,13 @@
 #include <glad/gl.h>
 #include "shader.h"
 #include "camera.h"
-#include <slime/object/object.h>
+#include <slime/world_object/world_object.h>
 #include <vector>
 #include <memory>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <slime/object/object.h>
+#include <slime/world_object/world_object.h>
 #include <vector>
 
 namespace slime {
@@ -21,7 +21,7 @@ public:
   void setup();
   void render();
   void clear();
-  void registerObject(Object *object);
+  void registerWorldObject(WorldObject *object);
 
 private:
   GLFWwindow *window;
@@ -33,7 +33,7 @@ private:
 
   Color colorMode;
 
-  std::vector<Object *> objectPool;
+  std::vector<WorldObject *> objectPool;
 
   static void framebufferSizeCallback(GLFWwindow *window, int width,
                                       int height);

@@ -1,7 +1,7 @@
 #ifndef PLANE_H
 #define PLANE_H
 
-#include "object.h"
+#include "world_object.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -9,7 +9,7 @@
 #include <vector>
 
 namespace slime {
-class Plane : public Object {
+class Plane : public WorldObject {
 
 public:
   Plane();

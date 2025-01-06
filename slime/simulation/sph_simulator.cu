@@ -24,7 +24,7 @@ SPHSimulator::SPHSimulator(const unsigned int vbo)
       bucketEnd(SPHSimulatorConstants::NUM_PARTICLES, -1) {
   random_device rd;
   mt19937 gen(rd());
-  uniform_real_distribution<> dis(-0.4f, 0.4f); // simulation space: [-1, 1]^3
+  uniform_real_distribution<> dis(-0.2f, 0.2f); // simulation space: [-1, 1]^3
   particles.reserve(SPHSimulatorConstants::NUM_PARTICLES);
   for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
     Particle particle;
