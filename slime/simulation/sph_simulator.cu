@@ -17,8 +17,10 @@ using namespace slime;
 using namespace slime::SPHSimulatorConstants;
 using namespace std;
 
-SPHSimulator::SPHSimulator(const unsigned int vbo)
-    : hashKeys(SPHSimulatorConstants::NUM_PARTICLES, 0),
+SPHSimulator::SPHSimulator(const unsigned int vbo,
+                           const std::string _renderMode)
+    : renderMode(_renderMode),
+      hashKeys(SPHSimulatorConstants::NUM_PARTICLES, 0),
       hashIndices(SPHSimulatorConstants::NUM_PARTICLES, 0),
       bucketStart(SPHSimulatorConstants::NUM_PARTICLES, -1),
       bucketEnd(SPHSimulatorConstants::NUM_PARTICLES, -1) {
@@ -141,18 +143,21 @@ void SPHSimulator::updateParticles(double deltaTime) {
                                                          deltaTime);
   cudaDeviceSynchronize();
 
-  /* Copying Particle Positions to VBO positions array */
+  if (this->renderMode == "point") {
+    /* Copying Particle Positions to VBO positions array */
 
-  // cout << "check4" << endl;
-  cudaGraphicsMapResources(1, &cudaVBOResource, 0);
-  float *d_positions;
-  size_t size;
-  cudaGraphicsResourceGetMappedPointer((void **)&d_positions, &size,
-                                       cudaVBOResource);
-  copyPositionToVBODevice<<<blockSize, threadSize>>>(d_positions, d_particles);
-  cudaDeviceSynchronize();
+    cudaGraphicsMapResources(1, &cudaVBOResource, 0);
+    float *d_positions;
+    size_t size;
+    cudaGraphicsResourceGetMappedPointer((void **)&d_positions, &size,
+                                         cudaVBOResource);
+    copyPositionToVBODevice<<<blockSize, threadSize>>>(d_positions,
+                                                       d_particles);
+    cudaDeviceSynchronize();
 
-  cudaGraphicsUnmapResources(1, &cudaVBOResource, 0);
+    cudaGraphicsUnmapResources(1, &cudaVBOResource, 0);
+  } else if (this->renderMode == "cube") {
+  }
 }
 
 void SPHSimulator::updateScalarField() {

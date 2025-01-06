@@ -7,6 +7,7 @@
 using namespace slime;
 using namespace slime::SPHSimulatorConstants;
 
+/* rename: global -> g_~, device -> d_~ */
 __device__ unsigned int hash(int3 cell, unsigned int seed = 73856093) {
   unsigned int hash = seed;
   hash ^= (unsigned int)cell.x * 73856093;
