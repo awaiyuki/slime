@@ -4,7 +4,7 @@
 ## Features
 - SPH-based Simulation
 - Surface Extraction using Marching Cubes
-- Neighbour Search using Spatial Hashing
+- Neighbor Search using Spatial Hashing
 - Parallelized Using CUDA
 
 ## Clone with submodules
