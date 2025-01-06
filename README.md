@@ -1,9 +1,10 @@
 # slime
-3D Slime (Viscoelastic Fluid) Simulation using OpenGL (in progress)
+3D Fluid Simulation using OpenGL (in progress)
 
 ## Features
-- SPH-based Fluid Simulation
-- Surface Extraction using Marching Cubes Algorithm
+- SPH-based Simulation
+- Surface Extraction using Marching Cubes
+- Neighbour Search using Spatial Hashing
 - Parallelized Using CUDA
 
 ## Clone with submodules
