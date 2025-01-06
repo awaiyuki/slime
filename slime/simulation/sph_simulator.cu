@@ -24,7 +24,7 @@ SPHSimulator::SPHSimulator(const unsigned int vbo)
       bucketEnd(SPHSimulatorConstants::NUM_PARTICLES, -1) {
   random_device rd;
   mt19937 gen(rd());
-  uniform_real_distribution<> dis(-0.1f, 0.1f);
+  uniform_real_distribution<> dis(-0.2f, 0.2f);
   particles.reserve(SPHSimulatorConstants::NUM_PARTICLES);
   for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
     Particle particle;
@@ -76,7 +76,7 @@ std::vector<Particle> *SPHSimulator::getParticlesPointer() {
 
 void SPHSimulator::updateParticles(double deltaTime) {
 
-  const int threadSize = 128;
+  const int threadSize = THREAD_SIZE_IN_UPDATE_PARTICLES;
   const int blockSize =
       (SPHSimulatorConstants::NUM_PARTICLES + threadSize - 1) / threadSize;
 
@@ -102,6 +102,10 @@ void SPHSimulator::updateParticles(double deltaTime) {
       raw_hashKeys, raw_hashIndices, raw_bucketStart, raw_bucketEnd);
   cudaDeviceSynchronize();
   printCudaError("updateHashBucket");
+  raw_hashKeys = thrust::raw_pointer_cast(hashKeys.data());
+  raw_hashIndices = thrust::raw_pointer_cast(hashIndices.data());
+  raw_bucketStart = thrust::raw_pointer_cast(bucketStart.data());
+  raw_bucketEnd = thrust::raw_pointer_cast(bucketEnd.data());
 
   /* Updating Particle attributes */
 

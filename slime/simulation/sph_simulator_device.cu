@@ -168,15 +168,31 @@ __global__ void slime::computeDensityDevice(Particle *particlesDevice,
         unsigned int cellHash =
             hash(toCellPosition(i.position + make_float3(nx, ny, nz)));
         unsigned int key = keyFromHash(cellHash);
-        // printf("%d %d %d\n", key, bucketStart[key], bucketStart[key]);
-
-        // printf("%d %d \n", bucketStart[key], bucketEnd[key]);
+        if (!(key >= 0 && key < NUM_PARTICLES)) {
+          printf("key:%d\n", key);
+          continue;
+        }
+        if (bucketEnd[key] - bucketStart[key] > MAX_NEIGHBORS) {
+          bucketEnd[key] = bucketStart[key] + MAX_NEIGHBORS;
+          if (bucketEnd[key] > NUM_PARTICLES)
+            bucketEnd[key] = NUM_PARTICLES - 1;
+        }
         for (int bucketIdx = bucketStart[key]; bucketIdx < bucketEnd[key];
              bucketIdx++) {
           if (bucketIdx == -1)
             break;
+
+          if (!(bucketIdx >= 0 && bucketIdx < NUM_PARTICLES)) {
+            printf("bucketIdx:%d\n", bucketIdx);
+            continue;
+          }
           if (idx == hashIndices[bucketIdx])
             continue;
+          if (!(hashIndices[bucketIdx] >= 0 &&
+                hashIndices[bucketIdx] < NUM_PARTICLES)) {
+            printf("hashIndices[bucketIdx]:%d\n", hashIndices[bucketIdx]);
+            continue;
+          }
           auto &j = particlesDevice[hashIndices[bucketIdx]];
           auto r = i.position - j.position;
           i.density += j.mass * poly6KernelDevice(r, SMOOTHING_RADIUS);
@@ -215,6 +231,11 @@ __global__ void slime::computePressureForceDevice(Particle *particlesDevice,
         unsigned int cellHash =
             hash(toCellPosition(i.position + make_float3(nx, ny, nz)));
         unsigned int key = keyFromHash(cellHash);
+        if (bucketEnd[key] - bucketStart[key] > MAX_NEIGHBORS) {
+          bucketEnd[key] = bucketStart[key] + MAX_NEIGHBORS;
+          if (bucketEnd[key] > NUM_PARTICLES)
+            bucketEnd[key] = NUM_PARTICLES - 1;
+        }
         for (int bucketIdx = bucketStart[key]; bucketIdx < bucketEnd[key];
              bucketIdx++) {
           if (bucketIdx == -1)
@@ -257,6 +278,11 @@ __global__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
         unsigned int cellHash =
             hash(toCellPosition(i.position + make_float3(nx, ny, nz)));
         unsigned int key = keyFromHash(cellHash);
+        if (bucketEnd[key] - bucketStart[key] > MAX_NEIGHBORS) {
+          bucketEnd[key] = bucketStart[key] + MAX_NEIGHBORS;
+          if (bucketEnd[key] > NUM_PARTICLES)
+            bucketEnd[key] = NUM_PARTICLES - 1;
+        }
         for (int bucketIdx = bucketStart[key]; bucketIdx < bucketEnd[key];
              bucketIdx++) {
           if (bucketIdx == -1)
@@ -276,7 +302,7 @@ __global__ void slime::computeViscosityForceDevice(Particle *particlesDevice,
       }
     }
   }
-  viscosityForce *= 0.1f;
+  viscosityForce *= 0.16f;
   // slime::SPHSimulatorConstants::VISCOSITY_COEFFICIENT
 
   auto acceleration = viscosityForce / i.mass;
@@ -309,6 +335,11 @@ __global__ void slime::computeSurfaceTensionDevice(Particle *particlesDevice,
             hash(toCellPosition(pi.position + make_float3(nx, ny, nz)));
         unsigned int key = keyFromHash(cellHash);
 
+        if (bucketEnd[key] - bucketStart[key] > MAX_NEIGHBORS) {
+          bucketEnd[key] = bucketStart[key] + MAX_NEIGHBORS;
+          if (bucketEnd[key] > NUM_PARTICLES)
+            bucketEnd[key] = NUM_PARTICLES - 1;
+        }
         for (int bucketIdx = bucketStart[key]; bucketIdx < bucketEnd[key];
              bucketIdx++) {
           if (bucketIdx == -1)
@@ -344,6 +375,11 @@ __global__ void slime::computeSurfaceTensionDevice(Particle *particlesDevice,
           unsigned int cellHash =
               hash(toCellPosition(pi.position + make_float3(nx, ny, nz)));
           unsigned int key = keyFromHash(cellHash);
+          if (bucketEnd[key] - bucketStart[key] > MAX_NEIGHBORS) {
+            bucketEnd[key] = bucketStart[key] + MAX_NEIGHBORS;
+            if (bucketEnd[key] > NUM_PARTICLES)
+              bucketEnd[key] = NUM_PARTICLES - 1;
+          }
           for (int bucketIdx = bucketStart[key]; bucketIdx < bucketEnd[key];
                bucketIdx++) {
             if (bucketIdx == -1)
