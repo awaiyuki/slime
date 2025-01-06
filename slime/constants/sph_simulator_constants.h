@@ -7,7 +7,7 @@ constexpr int NUM_PARTICLES = 50000;
 constexpr int THREAD_SIZE_IN_UPDATE_PARTICLES = 512;
 constexpr float PARTICLE_MASS = 1.0f;
 constexpr float REST_DENSITY = 1.0f;
-constexpr float GAS_CONSTANT = 1e-5f;
+constexpr float GAS_CONSTANT = 1e-4f;
 constexpr float VISCOSITY_COEFFICIENT =
     0.01f; // 어째서인지 참조를 못해서 sph_simulator_device.cu 코드 내에서 magic
 // number로 넣음.

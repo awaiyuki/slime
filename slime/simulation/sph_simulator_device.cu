@@ -444,15 +444,15 @@ __global__ void slime::computeWallConstraintDevice(Particle *particlesDevice,
   const float COLLISION_DAMPING = 0.9f;
   const float3 offsetFromCenter = i.position - make_float3(0.0f, 0.0f, 0.0f);
 
-  if (fabsf(offsetFromCenter.x) >= 1) {
+  if (fabsf(offsetFromCenter.x) > 1.01) {
     i.position.x = (i.position.x > 0) - (i.position.x < 0);
     i.velocity.x = -i.velocity.x * COLLISION_DAMPING;
   }
-  if (fabsf(offsetFromCenter.y) >= 1) {
+  if (fabsf(offsetFromCenter.y) > 1.01) {
     i.position.y = (i.position.y > 0) - (i.position.y < 0);
     i.velocity.y = -i.velocity.y * COLLISION_DAMPING;
   }
-  if (fabsf(offsetFromCenter.z) >= 1) {
+  if (fabsf(offsetFromCenter.z) > 1.01) {
     i.position.z = (i.position.z > 0) - (i.position.z < 0);
     i.velocity.z = -i.velocity.z * COLLISION_DAMPING;
   }
