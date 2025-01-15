@@ -142,9 +142,7 @@ __global__ void slime::updateHashBucketDevice(unsigned int *hashKeys,
     bucketStart[hashKeys[idx]] = idx;
   }
 
-  if (idx == NUM_PARTICLES - 1) {
-    bucketEnd[hashKeys[idx]] = hashIndices[idx] + 1;
-  } else if (hashKeys[idx] != hashKeys[idx + 1]) {
+  if (idx == NUM_PARTICLES - 1 || hashKeys[idx] != hashKeys[idx + 1]) {
     bucketEnd[hashKeys[idx]] = idx + 1;
   }
 }
