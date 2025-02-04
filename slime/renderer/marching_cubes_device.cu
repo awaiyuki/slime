@@ -62,7 +62,7 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
 
   for (int i = 0; i < 16; i += 3) {
     if (edges[i] == -1) {
-      continue;
+      break;
     }
     float3 v1 = interpolateVertices(
         d_scalarField, gridSize, surfaceLevel,
