@@ -1,4 +1,4 @@
-#include "marching_cubes_device.cuh"
+#include "marching_cubes_parallel.cuh"
 #include "marching_cubes_tables.h"
 #include <stdio.h>
 #define EPSILON 1e-6
@@ -29,10 +29,10 @@ __device__ float3 slime::interpolateVertices(float *d_scalarField, int gridSize,
   return (posA + t * (posB - posA));
 }
 
-__global__ void slime::marchParallel(float *d_scalarField, int gridSize,
-                                     float surfaceLevel,
-                                     slime::VertexData *d_vertexDataPtr,
-                                     int *d_counter) {
+__global__ void slime::g_march(float *d_scalarField, int gridSize,
+                               float surfaceLevel,
+                               slime::VertexData *d_vertexDataPtr,
+                               int *d_counter) {
 
   int x = threadIdx.x + blockDim.x * blockIdx.x;
   int y = threadIdx.y + blockDim.y * blockIdx.y;
@@ -84,4 +84,16 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
     d_vertexDataPtr->vertices[offset + 1] = v2;
     d_vertexDataPtr->vertices[offset + 2] = v3;
   }
+}
+
+__global__ void slime::g_copyVertexDataToVBO(float *d_positions,
+                                             slime::VertexData *d_vertexDataPtr,
+                                             const int gridSize) {
+  int idx = threadIdx.x + blockDim.x * blockIdx.x;
+  if (idx >= gridSize * gridSize * gridSize * 15)
+    return;
+
+  d_positions[3 * idx] = d_vertexDataPtr->vertices[idx].x;
+  d_positions[3 * idx + 1] = d_vertexDataPtr->vertices[idx].y;
+  d_positions[3 * idx + 2] = d_vertexDataPtr->vertices[idx].z;
 }

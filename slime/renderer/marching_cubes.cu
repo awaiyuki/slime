@@ -1,6 +1,6 @@
 #include "marching_cubes.cuh"
 #include "marching_cubes_tables.h"
-
+#include <slime/constants/marching_cubes_constants.h>
 #include <bitset>
 #include <iostream>
 
@@ -47,40 +47,56 @@ MarchingCubes::~MarchingCubes() {
   }
 }
 
-VertexData MarchingCubes::march(float *d_scalarField, float surfaceLevel) {
+void MarchingCubes::march(float *d_scalarField, float surfaceLevel) {
 
   cudaMemset(d_counter, 0, sizeof(int));
 
-  const int threadSize = 8;
+  const int threadSize = MarchingCubesConstants::THREAD_SIZE;
   dim3 dimBlock(threadSize, threadSize, threadSize);
   const int blockSize = (gridSize + threadSize - 1) / threadSize;
   dim3 dimGrid(blockSize, blockSize, blockSize);
 
   // cudaMemset(d_vertexDataPtr->vertices, 0.0, sizeof(float3) * gridSize *
   // gridSize * gridSize * 15);
-  marchParallel<<<dimGrid, dimBlock>>>(d_scalarField, gridSize, surfaceLevel,
-                                       d_vertexDataPtr, d_counter);
+  g_march<<<dimGrid, dimBlock>>>(d_scalarField, gridSize, surfaceLevel,
+                                 d_vertexDataPtr, d_counter);
+
+  cudaDeviceSynchronize();
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess) {
     printf("marchParallel error: %s\n", cudaGetErrorString(err));
   }
-  cudaDeviceSynchronize();
 
   /* get triangles from device and return */
-  VertexData tempVertexData;
-  cudaMemcpy(&tempVertexData, d_vertexDataPtr, sizeof(VertexData),
-             cudaMemcpyDeviceToHost);
-  cudaMemcpy(vertexData.vertices, tempVertexData.vertices,
-             sizeof(float3) * gridSize * gridSize * gridSize * 15,
-             cudaMemcpyDeviceToHost);
-  int h_counter;
-  cudaMemcpy(&h_counter, d_counter, sizeof(int), cudaMemcpyDeviceToHost);
-  // vertexData.size = gridSize * gridSize * gridSize * 15;
-  cout << h_counter << endl;
-  vertexData.size = h_counter;
-  //   cudaMemcpy(&vertexData.size, d_counter, sizeof(int),
-  //   cudaMemcpyDeviceToHost);
-  cout << vertexData.size << endl;
+  // VertexData tempVertexData;
+  // cudaMemcpy(&tempVertexData, d_vertexDataPtr, sizeof(VertexData),
+  //            cudaMemcpyDeviceToHost);
+  // cudaMemcpy(vertexData.vertices, tempVertexData.vertices,
+  //            sizeof(float3) * gridSize * gridSize * gridSize * 15,
+  //            cudaMemcpyDeviceToHost);
+  // int h_counter;
+  // cudaMemcpy(&h_counter, d_counter, sizeof(int), cudaMemcpyDeviceToHost);
+  // // vertexData.size = gridSize * gridSize * gridSize * 15;
+  // cout << h_counter << endl;
+  // vertexData.size = h_counter;
+  // //   cudaMemcpy(&vertexData.size, d_counter, sizeof(int),
+  // //   cudaMemcpyDeviceToHost);
+  // cout << vertexData.size << endl;
   // cout << vertexData.vertices[0].x << endl;
-  return vertexData;
+
+  /* CUDA-OpenGL interop */
+  cudaGraphicsMapResources(1, &cudaVBOResource, 0);
+  float *d_positions;
+  size_t size;
+  cudaGraphicsResourceGetMappedPointer((void **)&d_positions, &size,
+                                       cudaVBOResource);
+  g_copyVertexDataToVBO<<<blockSize, threadSize>>>(d_positions, d_vertexDataPtr,
+                                                   gridSize);
+  cudaDeviceSynchronize();
+  err = cudaGetLastError();
+  if (err != cudaSuccess) {
+    printf("copyVertexDataToVBODevice error: %s\n", cudaGetErrorString(err));
+  }
+
+  cudaGraphicsUnmapResources(1, &cudaVBOResource, 0);
 };

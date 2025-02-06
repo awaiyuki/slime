@@ -32,7 +32,7 @@ public:
   void updateScalarField();
   void updateParticles(double deltaTime);
 
-  VertexData extractSurface();
+  void extractSurface();
 
 private:
   std::vector<Particle> particles;

@@ -120,7 +120,7 @@ void Slime::render(double deltaTime) {
     // Render with triangles
     sphSimulator->updateScalarField();
 
-    // slime::VertexData vertexData = sphSimulator->extractSurface();
+    sphSimulator->extractSurface();
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
     // float3 *vertices = vertexData.vertices;
