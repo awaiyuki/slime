@@ -54,15 +54,16 @@ void Slime::setup() {
 
   } else {
     const int gridSize = SPHSimulatorConstants::GRID_SIZE;
-    const int vertexCount = sizeof(float) * gridSize * gridSize * gridSize * 15;
-    glBufferData(GL_ARRAY_BUFFER, vertexCount * 3, nullptr, GL_DYNAMIC_DRAW);
+    const int vertexCount = gridSize * gridSize * gridSize * 15;
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexCount * 3, nullptr,
+                 GL_DYNAMIC_DRAW);
   }
 
   /* position attribute */
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
 
-  this->sphSimulator = make_unique<SPHSimulator>(VBO, "cube");
+  this->sphSimulator = make_unique<SPHSimulator>(VBO, renderMode);
   std::vector<Particle> *particles = sphSimulator->getParticlesPointer();
 }
 
@@ -171,7 +172,7 @@ void Slime::render(double deltaTime) {
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     const int gridSize = SPHSimulatorConstants::GRID_SIZE;
-    const int vertexCount = sizeof(float) * gridSize * gridSize * gridSize * 15;
+    const int vertexCount = gridSize * gridSize * gridSize * 15;
 
     glDrawArrays(GL_TRIANGLES, 0, vertexCount * 3);
 

@@ -24,6 +24,7 @@ SPHSimulator::SPHSimulator(const unsigned int vbo,
       hashIndices(SPHSimulatorConstants::NUM_PARTICLES, 0),
       bucketStart(SPHSimulatorConstants::NUM_PARTICLES, -1),
       bucketEnd(SPHSimulatorConstants::NUM_PARTICLES, -1) {
+  cout << "in SPHSimulator: renderMode=" << renderMode << endl;
   random_device rd;
   mt19937 gen(rd());
   uniform_real_distribution<> dis(-0.4f, 0.4f); // simulation space: [-1, 1]^3

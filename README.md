@@ -1,10 +1,14 @@
 # slime
-3D Slime (Viscoelastic Fluid) Simulation using OpenGL (in progress)
+3D SPH-based Fluid Simulation using CUDA and OpenGL
+
+## Current Status
+The core features have been implemented, and the project is currently undergoing debugging and improvement, focusing on fine-tuning SPH simulation accuracy (adjusting constants) and enhancing marching cubes rendering performance.
 
 ## Features
 - SPH-based Fluid Simulation
 - Surface Extraction using Marching Cubes Algorithm
-- Parallelized Using CUDA
+- GPU Parallel Processing Using CUDA (CUDA-OpenGL Interop)
+- Spatial Hashing
 
 ## Clone with submodules
 ```bash
@@ -24,3 +28,6 @@ cd build
 cmake ..
 cmake --build . --config Release
 ```
+
+## Future Updates
+- Lighting

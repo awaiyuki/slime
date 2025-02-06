@@ -92,7 +92,11 @@ __global__ void slime::g_copyVertexDataToVBO(float *d_positions,
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
   if (idx >= gridSize * gridSize * gridSize * 15)
     return;
-
+  if (idx > 10) {
+    printf("Thread %d: copying vertex %f, %f, %f\n", idx,
+           d_vertexDataPtr->vertices[idx].x, d_vertexDataPtr->vertices[idx].y,
+           d_vertexDataPtr->vertices[idx].z);
+  }
   d_positions[3 * idx] = d_vertexDataPtr->vertices[idx].x;
   d_positions[3 * idx + 1] = d_vertexDataPtr->vertices[idx].y;
   d_positions[3 * idx + 2] = d_vertexDataPtr->vertices[idx].z;

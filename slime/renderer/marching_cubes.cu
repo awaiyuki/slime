@@ -5,6 +5,7 @@
 #include <iostream>
 
 using namespace slime;
+using namespace slime::MarchingCubesConstants;
 using namespace std;
 
 __device__ int *d_counter;
@@ -51,7 +52,7 @@ void MarchingCubes::march(float *d_scalarField, float surfaceLevel) {
 
   cudaMemset(d_counter, 0, sizeof(int));
 
-  const int threadSize = MarchingCubesConstants::THREAD_SIZE;
+  const int threadSize = THREAD_SIZE_IN_MARCH;
   dim3 dimBlock(threadSize, threadSize, threadSize);
   const int blockSize = (gridSize + threadSize - 1) / threadSize;
   dim3 dimGrid(blockSize, blockSize, blockSize);
@@ -90,7 +91,12 @@ void MarchingCubes::march(float *d_scalarField, float surfaceLevel) {
   size_t size;
   cudaGraphicsResourceGetMappedPointer((void **)&d_positions, &size,
                                        cudaVBOResource);
-  g_copyVertexDataToVBO<<<blockSize, threadSize>>>(d_positions, d_vertexDataPtr,
+
+  int totalElements = gridSize * gridSize * gridSize * 15;
+  int numThreads = THREAD_SIZE_IN_COPY_VERTEX_DATA;
+  int numBlocks = (numBlocks + numThreads - 1) / numThreads;
+
+  g_copyVertexDataToVBO<<<blockSize, numThreads>>>(d_positions, d_vertexDataPtr,
                                                    gridSize);
   cudaDeviceSynchronize();
   err = cudaGetLastError();

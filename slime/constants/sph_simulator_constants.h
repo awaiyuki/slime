@@ -3,7 +3,7 @@
 
 namespace slime::SPHSimulatorConstants {
 
-constexpr int NUM_PARTICLES = 10000; // 10만에서 100만 정도로
+constexpr int NUM_PARTICLES = 50000; // 10만에서 100만 정도로
 constexpr int THREAD_SIZE_IN_UPDATE_PARTICLES = 512;
 constexpr int THREAD_SIZE_IN_UPDATE_SCALAR_FIELD = 8;
 constexpr float PARTICLE_MASS = 1.0f;
@@ -20,7 +20,7 @@ constexpr float SURFACE_LEVEL = 0.5f;
 constexpr int MAX_NEIGHBORS =
     100; // for resolving load imbalance in spatial hashing
 constexpr int GRID_SIZE =
-    30; // for both spatial hashing and marching cubes, -> spatial hashing은
+    50; // for both spatial hashing and marching cubes, -> spatial hashing은
         // 50으로 하고 marching cubes는 500 정도로 하는 게 좋을듯. cuda-opengl
         // interop 후 변경
 

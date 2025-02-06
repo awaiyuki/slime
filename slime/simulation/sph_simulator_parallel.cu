@@ -385,24 +385,16 @@ __global__ void slime::g_computeSurfaceTension(Particle *d_particles,
     }
   }
 
-  // ∇c_S의 크기 계산
   float normGrad = length(grad_cS);
 
-  // 임계치 SURFACE_NORMAL_THRESHOLD 이상일 때만 표면장력 계산
   if (normGrad > SURFACE_NORMAL_THRESHOLD) {
-    // 문헌 식 (17): kappa = -∇²c_S / |∇c_S|
     float curvature = -laplacian_cS / normGrad;
 
-    // 표면장력 힘 계산:
-    // 문헌 식 (19): f_surface = σ * κ * ∇c_S  = -σ*(∇²c_S/|∇c_S|)*∇c_S
-    float3 F_st = SURFACE_TENSION_COEFFICIENT * curvature * grad_cS;
-    // 또는, 동일하게 부호를 맞추려면:
-    // float3 F_st = -SURFACE_TENSION_COEFFICIENT * laplacian_cS * (grad_cS /
-    // normGrad);
+    float3 surfaceTensionForce =
+        SURFACE_TENSION_COEFFICIENT * curvature * grad_cS;
 
-    // 가속도로 변환하여 속도 업데이트
-    float3 a_st = F_st / pi.mass;
-    pi.velocity += a_st * static_cast<float>(deltaTime);
+    float3 accleration = surfaceTensionForce / pi.mass;
+    pi.velocity += accleration * static_cast<float>(deltaTime);
   }
 }
 
@@ -464,7 +456,7 @@ __global__ void slime::g_copyPositionToVBO(float *d_positions,
   if (idx >= NUM_PARTICLES)
     return;
   auto &i = d_particles[idx];
-  printf("%f %f %f\n", i.position.x, i.position.y, i.position.z);
+  // printf("%f %f %f\n", i.position.x, i.position.y, i.position.z);
   d_positions[3 * idx] = i.position.x;
   d_positions[3 * idx + 1] = i.position.y;
   d_positions[3 * idx + 2] = i.position.z;
