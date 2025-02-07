@@ -1,4 +1,4 @@
-#include "marching_cubes_device.cuh"
+#include "marching_cubes_parallel.cuh"
 #include "marching_cubes_tables.h"
 #include <stdio.h>
 #define EPSILON 1e-6
@@ -29,10 +29,10 @@ __device__ float3 slime::interpolateVertices(float *d_scalarField, int gridSize,
   return (posA + t * (posB - posA));
 }
 
-__global__ void slime::marchParallel(float *d_scalarField, int gridSize,
-                                     float surfaceLevel,
-                                     slime::VertexData *d_vertexDataPtr,
-                                     int *d_counter) {
+__global__ void slime::g_march(float *d_scalarField, int gridSize,
+                               float surfaceLevel,
+                               slime::VertexData *d_vertexDataPtr,
+                               int *d_counter) {
 
   int x = threadIdx.x + blockDim.x * blockIdx.x;
   int y = threadIdx.y + blockDim.y * blockIdx.y;
@@ -62,7 +62,7 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
 
   for (int i = 0; i < 16; i += 3) {
     if (edges[i] == -1) {
-      continue;
+      break;
     }
     float3 v1 = interpolateVertices(
         d_scalarField, gridSize, surfaceLevel,
@@ -79,9 +79,27 @@ __global__ void slime::marchParallel(float *d_scalarField, int gridSize,
         cubeVertexCoord[d_cornerIndexFromEdge[edges[i + 2]][0]],
         cubeVertexCoord[d_cornerIndexFromEdge[edges[i + 2]][1]]);
 
-    int offset = atomicAdd(d_counter, 3);
+    int offset = atomicAdd(d_counter, 3); // increase number of vertices
+    printf("d_counter: %d\n", *d_counter);
     d_vertexDataPtr->vertices[offset] = v1;
     d_vertexDataPtr->vertices[offset + 1] = v2;
     d_vertexDataPtr->vertices[offset + 2] = v3;
   }
+}
+
+__global__ void slime::g_copyVertexDataToVBO(float *d_positions,
+                                             slime::VertexData *d_vertexDataPtr,
+                                             const int numVertices) {
+  int idx = threadIdx.x + blockDim.x * blockIdx.x;
+  if (idx >= numVertices)
+    return;
+  // if (idx < 10) {
+  //   printf("Thread %d: copying vertex %f, %f, %f\n", idx,
+  //          d_vertexDataPtr->vertices[idx].x,
+  //          d_vertexDataPtr->vertices[idx].y,
+  //          d_vertexDataPtr->vertices[idx].z);
+  // }
+  d_positions[3 * idx] = d_vertexDataPtr->vertices[idx].x;
+  d_positions[3 * idx + 1] = d_vertexDataPtr->vertices[idx].y;
+  d_positions[3 * idx + 2] = d_vertexDataPtr->vertices[idx].z;
 }

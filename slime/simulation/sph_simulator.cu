@@ -1,6 +1,6 @@
 
 #include "sph_simulator.cuh"
-#include "sph_simulator_device.cuh"
+#include "sph_simulator_parallel.cuh"
 #include <cstring>
 #include <random>
 #include <iostream>
@@ -17,11 +17,14 @@ using namespace slime;
 using namespace slime::SPHSimulatorConstants;
 using namespace std;
 
-SPHSimulator::SPHSimulator(const unsigned int vbo)
-    : hashKeys(SPHSimulatorConstants::NUM_PARTICLES, 0),
+SPHSimulator::SPHSimulator(const unsigned int vbo,
+                           const std::string _renderMode)
+    : renderMode(_renderMode),
+      hashKeys(SPHSimulatorConstants::NUM_PARTICLES, 0),
       hashIndices(SPHSimulatorConstants::NUM_PARTICLES, 0),
       bucketStart(SPHSimulatorConstants::NUM_PARTICLES, -1),
       bucketEnd(SPHSimulatorConstants::NUM_PARTICLES, -1) {
+  cout << "in SPHSimulator: renderMode=" << renderMode << endl;
   random_device rd;
   mt19937 gen(rd());
   uniform_real_distribution<> dis(-0.2f, 0.2f); // simulation space: [-1, 1]^3
@@ -82,8 +85,8 @@ void SPHSimulator::updateParticles(double deltaTime) {
 
   /* Updating Spatial Hashing */
 
-  updateSpatialHashDevice<<<blockSize, threadSize>>>(d_particles, raw_hashKeys,
-                                                     raw_hashIndices);
+  g_updateSpatialHash<<<blockSize, threadSize>>>(d_particles, raw_hashKeys,
+                                                 raw_hashIndices);
   cudaDeviceSynchronize();
 
   printCudaError("updateSpatialHash or before");
@@ -98,8 +101,8 @@ void SPHSimulator::updateParticles(double deltaTime) {
   raw_hashKeys = thrust::raw_pointer_cast(hashKeys.data());
   raw_hashIndices = thrust::raw_pointer_cast(hashIndices.data());
 
-  updateHashBucketDevice<<<blockSize, threadSize>>>(
-      raw_hashKeys, raw_hashIndices, raw_bucketStart, raw_bucketEnd);
+  g_updateHashBucket<<<blockSize, threadSize>>>(raw_hashKeys, raw_hashIndices,
+                                                raw_bucketStart, raw_bucketEnd);
   cudaDeviceSynchronize();
   printCudaError("updateHashBucket");
   raw_hashKeys = thrust::raw_pointer_cast(hashKeys.data());
@@ -109,72 +112,69 @@ void SPHSimulator::updateParticles(double deltaTime) {
 
   /* Updating Particle attributes */
 
-  computeDensityDevice<<<blockSize, threadSize>>>(
-      d_particles, raw_hashIndices, raw_bucketStart, raw_bucketEnd);
+  g_computeDensity<<<blockSize, threadSize>>>(d_particles, raw_hashIndices,
+                                              raw_bucketStart, raw_bucketEnd);
   cudaDeviceSynchronize();
   printCudaError("computeDensity");
 
-  computePressureDevice<<<blockSize, threadSize>>>(d_particles);
+  g_computePressure<<<blockSize, threadSize>>>(d_particles);
 
-  computePressureForceDevice<<<blockSize, threadSize>>>(
+  g_computePressureForce<<<blockSize, threadSize>>>(
       d_particles, raw_hashIndices, raw_bucketStart, raw_bucketEnd, deltaTime);
   cudaDeviceSynchronize();
 
   printCudaError("computePressureForce");
-  computeViscosityForceDevice<<<blockSize, threadSize>>>(
+  g_computeViscosityForce<<<blockSize, threadSize>>>(
       d_particles, raw_hashIndices, raw_bucketStart, raw_bucketEnd, deltaTime);
   cudaDeviceSynchronize();
   printCudaError("computeViscosityForce");
 
-  computeSurfaceTensionDevice<<<blockSize, threadSize>>>(
+  g_computeSurfaceTension<<<blockSize, threadSize>>>(
       d_particles, raw_hashIndices, raw_bucketStart, raw_bucketEnd, deltaTime);
   cudaDeviceSynchronize();
   printCudaError("computeSurfaceTensionForce");
 
-  computeGravityDevice<<<blockSize, threadSize>>>(d_particles, deltaTime);
+  g_computeGravity<<<blockSize, threadSize>>>(d_particles, deltaTime);
   cudaDeviceSynchronize();
 
-  computePositionDevice<<<blockSize, threadSize>>>(d_particles, deltaTime);
+  g_computePosition<<<blockSize, threadSize>>>(d_particles, deltaTime);
   cudaDeviceSynchronize();
 
-  computeWallConstraintDevice<<<blockSize, threadSize>>>(d_particles,
-                                                         deltaTime);
+  g_computeWallConstraint<<<blockSize, threadSize>>>(d_particles, deltaTime);
   cudaDeviceSynchronize();
 
-  /* Copying Particle Positions to VBO positions array */
+  if (this->renderMode == "point") {
+    /* Copying Particle Positions to VBO positions array */
 
-  // cout << "check4" << endl;
-  cudaGraphicsMapResources(1, &cudaVBOResource, 0);
-  float *d_positions;
-  size_t size;
-  cudaGraphicsResourceGetMappedPointer((void **)&d_positions, &size,
-                                       cudaVBOResource);
-  copyPositionToVBODevice<<<blockSize, threadSize>>>(d_positions, d_particles);
-  cudaDeviceSynchronize();
+    cudaGraphicsMapResources(1, &cudaVBOResource, 0);
+    float *d_positions;
+    size_t size;
+    cudaGraphicsResourceGetMappedPointer((void **)&d_positions, &size,
+                                         cudaVBOResource);
+    cout << "cudavboresource size: " << size << endl;
+    g_copyPositionToVBO<<<blockSize, threadSize>>>(d_positions, d_particles);
+    cudaDeviceSynchronize();
 
-  cudaGraphicsUnmapResources(1, &cudaVBOResource, 0);
+    cudaGraphicsUnmapResources(1, &cudaVBOResource, 0);
+  }
 }
 
 void SPHSimulator::updateScalarField() {
   /* Need to debug */
-
-  const int threadSize = 8;
+  cout << "updateScalarField" << endl;
+  const int threadSize = THREAD_SIZE_IN_UPDATE_SCALAR_FIELD;
   dim3 dimBlock(threadSize, threadSize, threadSize);
   const int blockSize = (GRID_SIZE + threadSize - 1) / threadSize;
   dim3 dimGrid(blockSize, blockSize, blockSize);
 
-  updateScalarFieldDevice<<<dimGrid, dimBlock>>>(
-      d_scalarField, d_particles, GRID_SIZE,
-      1954.0); // need to investigate normalization methods.
+  g_updateScalarField<<<dimGrid, dimBlock>>>(d_scalarField, d_particles,
+                                             GRID_SIZE);
 
-  cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    printf("updated_scalarField error: %s\n", cudaGetErrorString(err));
-  }
+  printCudaError("updateScalarField");
   cudaDeviceSynchronize();
 }
 
-VertexData SPHSimulator::extractSurface() {
-  return marchingCubes->march(d_scalarField,
-                              SPHSimulatorConstants::SURFACE_LEVEL);
+void SPHSimulator::extractSurface() {
+  marchingCubes->march(cudaVBOResource, d_scalarField,
+                       SPHSimulatorConstants::SURFACE_LEVEL);
 }

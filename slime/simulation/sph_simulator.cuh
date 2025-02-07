@@ -25,17 +25,19 @@ struct Particle {
 class SPHSimulator {
 
 public:
-  SPHSimulator(const unsigned int vbo);
+  SPHSimulator(const unsigned int vbo, const std::string _renderMode = "point");
   ~SPHSimulator();
 
   std::vector<Particle> *getParticlesPointer();
   void updateScalarField();
   void updateParticles(double deltaTime);
 
-  VertexData extractSurface();
+  void extractSurface();
 
 private:
   std::vector<Particle> particles;
+
+  std::string renderMode;
 
   thrust::device_vector<unsigned int> hashKeys;
   thrust::device_vector<unsigned int> hashIndices;

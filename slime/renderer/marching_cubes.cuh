@@ -9,21 +9,21 @@
 #include <vector>
 #include <iostream>
 #include <glm/glm.hpp>
-#include "marching_cubes_device.cuh"
-
+#include "marching_cubes_parallel.cuh"
 namespace slime {
 class MarchingCubes {
 private:
   int gridSize;
 
-  float3* d_vertices;
+  float3 *d_vertices;
   VertexData vertexData, *d_vertexDataPtr;
 
 public:
   MarchingCubes(int _gridSize);
   ~MarchingCubes();
 
-  VertexData march(float *scalarField, float surfaceLevel);
+  void march(cudaGraphicsResource_t cudaVBOResource, float *scalarField,
+             float surfaceLevel);
 };
 } // namespace slime
 #endif

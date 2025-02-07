@@ -48,24 +48,22 @@ void Slime::setup() {
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
   if (renderMode == "point") {
-    std::vector<float> positions(SPHSimulatorConstants::NUM_PARTICLES * 3);
     glBufferData(GL_ARRAY_BUFFER,
                  sizeof(float) * SPHSimulatorConstants::NUM_PARTICLES * 3,
-                 positions.data(), GL_DYNAMIC_DRAW);
-    cout << "point render set" << endl;
+                 nullptr, GL_DYNAMIC_DRAW);
 
   } else {
     const int gridSize = SPHSimulatorConstants::GRID_SIZE;
-    glBufferData(GL_ARRAY_BUFFER,
-                 sizeof(float) * gridSize * gridSize * gridSize * 15 * 3,
-                 nullptr, GL_DYNAMIC_DRAW);
+    const int vertexCount = gridSize * gridSize * gridSize * 15;
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexCount * 3, nullptr,
+                 GL_DYNAMIC_DRAW);
   }
 
   /* position attribute */
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
 
-  this->sphSimulator = make_unique<SPHSimulator>(VBO);
+  this->sphSimulator = make_unique<SPHSimulator>(VBO, renderMode);
   std::vector<Particle> *particles = sphSimulator->getParticlesPointer();
 }
 
@@ -77,15 +75,14 @@ void Slime::render(double deltaTime) {
   // while (accumulator >= fixedTimeStep) {
   //   accumulator -= fixedTimeStep;
   // }
+
   sphSimulator->updateParticles(deltaTime);
 
   if (renderMode == "point") {
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-    cout << "point render " << endl;
     // Render with points
     const int32_t pointCount = SPHSimulatorConstants::NUM_PARTICLES;
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
     /* Transform */
     shader->use();
@@ -124,21 +121,22 @@ void Slime::render(double deltaTime) {
     // Render with triangles
     sphSimulator->updateScalarField();
 
-    slime::VertexData vertexData = sphSimulator->extractSurface();
-    float3 *vertices = vertexData.vertices;
-    const int vertexCount = vertexData.size;
-    cout << "vertexCount: " << vertexCount << endl;
-    const int triangleDataSize = 3 * vertexCount;
-    unique_ptr<float[]> triangleData(new float[triangleDataSize]);
-
-    for (int i = 0; i < vertexCount; i++) {
-      triangleData[3 * i] = vertices[i].x;
-      triangleData[3 * i + 1] = vertices[i].y;
-      triangleData[3 * i + 2] = vertices[i].z;
-    }
+    sphSimulator->extractSurface();
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * triangleDataSize,
-                    triangleData.get());
+
+    // float3 *vertices = vertexData.vertices;
+    // const int vertexCount = vertexData.size;
+    // cout << "vertexCount: " << vertexCount << endl;
+    // const int triangleDataSize = 3 * vertexCount;
+    // unique_ptr<float[]> triangleData(new float[triangleDataSize]);
+
+    // for (int i = 0; i < vertexCount; i++) {
+    //   triangleData[3 * i] = vertices[i].x;
+    //   triangleData[3 * i + 1] = vertices[i].y;
+    //   triangleData[3 * i + 2] = vertices[i].z;
+    // }
+    // glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * triangleDataSize,
+    //                 triangleData.get());
 
     /* Transform */
     shader->use();
@@ -173,8 +171,10 @@ void Slime::render(double deltaTime) {
     glBindVertexArray(VAO);
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    const int gridSize = SPHSimulatorConstants::GRID_SIZE;
+    const int vertexCount = gridSize * gridSize * gridSize * 15;
 
-    glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+    glDrawArrays(GL_TRIANGLES, 0, vertexCount * 3);
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }

@@ -1,13 +1,19 @@
 # slime
-3D Fluid Simulation using OpenGL (in progress)
+3D SPH-based Fluid Simulation using CUDA and OpenGL
+
+## Current Status
+The core features have been implemented, and the project is currently undergoing debugging and improvement, focusing on fine-tuning SPH simulation accuracy (adjusting constants) and enhancing marching cubes rendering performance.
 
 ## Features
-- SPH-based Simulation
-- Surface Extraction using Marching Cubes
-- Neighbor Search using Spatial Hashing
-- Parallelized Using CUDA
+- SPH-based Fluid Simulation
+- Surface Extraction using Marching Cubes Algorithm
+- GPU Parallel Processing Using CUDA (CUDA-OpenGL Interop)
+- Spatial Hashing
 
-## Clone with submodules
+## Future Updates
+- Lighting
+
+## How to clone with submodules
 ```bash
 git clone --recursive https://github.com/harutea/slime.git
 ```

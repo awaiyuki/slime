@@ -13,7 +13,7 @@ int main() {
   /* Need to make objects detect lights */
   slime::Plane plane(1.0f, -1.0f, 1.0f, 32);
 
-  slime::Slime slime(0.0f, 0.0f, 0.0f, "point");
+  slime::Slime slime(0.0f, 0.0f, 0.0f, "cube");
 
   engine.registerWorldObject(&plane);
   engine.registerWorldObject(&slime);
