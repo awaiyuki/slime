@@ -324,9 +324,6 @@ __global__ void slime::g_computeViscosityForce(Particle *d_particles,
   auto deltaVelocity = acceleration * float(deltaTime);
   i.velocity += deltaVelocity;
 }
-__device__ constexpr float SURFACE_TENSION_COEFFICIENT = 0.072f;
-__device__ constexpr float SURFACE_NORMAL_THRESHOLD = 0.1f;
-__device__ constexpr float EPS_CURVATURE = 1e-5f;
 
 __global__ void slime::g_computeSurfaceTension(Particle *d_particles,
                                                unsigned int *hashIndices,

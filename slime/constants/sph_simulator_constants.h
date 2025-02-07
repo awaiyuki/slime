@@ -3,8 +3,6 @@
 
 namespace slime::SPHSimulatorConstants {
 
-// Add __host__ __device__ and inline so that device code can reference these
-// constants.
 inline constexpr int NUM_PARTICLES = 50000;
 inline constexpr int THREAD_SIZE_IN_UPDATE_PARTICLES = 512;
 inline constexpr int THREAD_SIZE_IN_UPDATE_SCALAR_FIELD = 8;
@@ -18,6 +16,9 @@ inline __device__ constexpr float VISCOSITY_COEFFICIENT = 0.01f;
 inline __device__ constexpr float GRAVITATIONAL_ACCELERATION = -1.0f;
 inline __device__ constexpr float SMOOTHING_RADIUS = 1.0f;
 inline __device__ constexpr float SURFACE_LEVEL = 0.5f;
+inline __device__ constexpr float SURFACE_TENSION_COEFFICIENT = 0.072f;
+inline __device__ constexpr float SURFACE_NORMAL_THRESHOLD = 0.1f;
+inline __device__ constexpr float EPS_CURVATURE = 1e-5f;
 }; // namespace slime::SPHSimulatorConstants
 
 #endif

@@ -23,6 +23,7 @@ extern __global__ void g_march(float *d_scalarField, int gridSize,
                                float surfaceLevel,
                                slime::VertexData *d_vertexDataPtr,
                                int *d_counter);
+
 extern __global__ void g_copyVertexDataToVBO(float *d_positions,
                                              slime::VertexData *d_VertexDataPtr,
                                              const int numVertices);
