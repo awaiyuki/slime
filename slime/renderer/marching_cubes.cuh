@@ -10,7 +10,6 @@
 #include <iostream>
 #include <glm/glm.hpp>
 #include "marching_cubes_parallel.cuh"
-
 namespace slime {
 class MarchingCubes {
 private:
@@ -18,13 +17,13 @@ private:
 
   float3 *d_vertices;
   VertexData vertexData, *d_vertexDataPtr;
-  cudaGraphicsResource_t cudaVBOResource;
 
 public:
   MarchingCubes(int _gridSize);
   ~MarchingCubes();
 
-  void march(float *scalarField, float surfaceLevel);
+  void march(cudaGraphicsResource_t cudaVBOResource, float *scalarField,
+             float surfaceLevel);
 };
 } // namespace slime
 #endif

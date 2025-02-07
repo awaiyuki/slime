@@ -82,8 +82,8 @@ __device__ float laplacianViscosityKernelDevice(float3 r, float h) {
 }
 
 __global__ void slime::g_updateScalarField(float *colorFieldDevice,
-                                           Particle *d_particles, int gridSize,
-                                           float maxColorQuantity) {
+                                           Particle *d_particles,
+                                           int gridSize) {
   int x = threadIdx.x + blockIdx.x * blockDim.x;
   int y = threadIdx.y + blockIdx.y * blockDim.y;
   int z = threadIdx.z + blockIdx.z * blockDim.z;

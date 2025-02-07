@@ -79,7 +79,8 @@ __global__ void slime::g_march(float *d_scalarField, int gridSize,
         cubeVertexCoord[d_cornerIndexFromEdge[edges[i + 2]][0]],
         cubeVertexCoord[d_cornerIndexFromEdge[edges[i + 2]][1]]);
 
-    int offset = atomicAdd(d_counter, 3);
+    int offset = atomicAdd(d_counter, 3); // increase number of vertices
+    printf("d_counter: %d\n", *d_counter);
     d_vertexDataPtr->vertices[offset] = v1;
     d_vertexDataPtr->vertices[offset + 1] = v2;
     d_vertexDataPtr->vertices[offset + 2] = v3;
@@ -88,15 +89,16 @@ __global__ void slime::g_march(float *d_scalarField, int gridSize,
 
 __global__ void slime::g_copyVertexDataToVBO(float *d_positions,
                                              slime::VertexData *d_vertexDataPtr,
-                                             const int gridSize) {
+                                             const int numVertices) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= gridSize * gridSize * gridSize * 15)
+  if (idx >= numVertices)
     return;
-  if (idx > 10) {
-    printf("Thread %d: copying vertex %f, %f, %f\n", idx,
-           d_vertexDataPtr->vertices[idx].x, d_vertexDataPtr->vertices[idx].y,
-           d_vertexDataPtr->vertices[idx].z);
-  }
+  // if (idx < 10) {
+  //   printf("Thread %d: copying vertex %f, %f, %f\n", idx,
+  //          d_vertexDataPtr->vertices[idx].x,
+  //          d_vertexDataPtr->vertices[idx].y,
+  //          d_vertexDataPtr->vertices[idx].z);
+  // }
   d_positions[3 * idx] = d_vertexDataPtr->vertices[idx].x;
   d_positions[3 * idx + 1] = d_vertexDataPtr->vertices[idx].y;
   d_positions[3 * idx + 2] = d_vertexDataPtr->vertices[idx].z;

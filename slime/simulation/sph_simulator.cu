@@ -151,6 +151,7 @@ void SPHSimulator::updateParticles(double deltaTime) {
     size_t size;
     cudaGraphicsResourceGetMappedPointer((void **)&d_positions, &size,
                                          cudaVBOResource);
+    cout << "cudavboresource size: " << size << endl;
     g_copyPositionToVBO<<<blockSize, threadSize>>>(d_positions, d_particles);
     cudaDeviceSynchronize();
 
@@ -166,17 +167,14 @@ void SPHSimulator::updateScalarField() {
   const int blockSize = (GRID_SIZE + threadSize - 1) / threadSize;
   dim3 dimGrid(blockSize, blockSize, blockSize);
 
-  g_updateScalarField<<<dimGrid, dimBlock>>>(
-      d_scalarField, d_particles, GRID_SIZE,
-      1954.0); // need to investigate normalization methods.
+  g_updateScalarField<<<dimGrid, dimBlock>>>(d_scalarField, d_particles,
+                                             GRID_SIZE);
 
-  cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    printf("updateScalarField error: %s\n", cudaGetErrorString(err));
-  }
+  printCudaError("updateScalarField");
   cudaDeviceSynchronize();
 }
 
 void SPHSimulator::extractSurface() {
-  marchingCubes->march(d_scalarField, SPHSimulatorConstants::SURFACE_LEVEL);
+  marchingCubes->march(cudaVBOResource, d_scalarField,
+                       SPHSimulatorConstants::SURFACE_LEVEL);
 }

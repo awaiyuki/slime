@@ -3,7 +3,7 @@
 namespace slime::MarchingCubesConstants {
 
 constexpr int THREAD_SIZE_IN_MARCH = 8;
-constexpr int THREAD_SIZE_IN_COPY_VERTEX_DATA = 512;
+constexpr int THREAD_SIZE_IN_COPY_VERTEX_DATA = 256;
 }; // namespace slime::MarchingCubesConstants
 
 #endif

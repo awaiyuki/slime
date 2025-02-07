@@ -9,8 +9,7 @@
 namespace slime {
 
 extern __global__ void g_updateScalarField(float *colorFieldDevice,
-                                           Particle *d_particles, int gridSize,
-                                           float maxColorQuantity);
+                                           Particle *d_particles, int gridSize);
 
 extern __global__ void g_computeDensity(Particle *d_particles,
                                         unsigned int *hashIndices,

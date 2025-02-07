@@ -1,6 +1,7 @@
 #include "marching_cubes.cuh"
 #include "marching_cubes_tables.h"
 #include <slime/constants/marching_cubes_constants.h>
+#include <slime/utility/cuda_debug.cuh>
 #include <bitset>
 #include <iostream>
 
@@ -48,7 +49,8 @@ MarchingCubes::~MarchingCubes() {
   }
 }
 
-void MarchingCubes::march(float *d_scalarField, float surfaceLevel) {
+void MarchingCubes::march(cudaGraphicsResource_t cudaVBOResource,
+                          float *d_scalarField, float surfaceLevel) {
 
   cudaMemset(d_counter, 0, sizeof(int));
 
@@ -63,9 +65,20 @@ void MarchingCubes::march(float *d_scalarField, float surfaceLevel) {
                                  d_vertexDataPtr, d_counter);
 
   cudaDeviceSynchronize();
-  cudaError_t err = cudaGetLastError();
+  printCudaError("g_march");
+
+  // Ensure d_counter is updated
+  int h_counter;
+  cudaError_t err =
+      cudaMemcpy(&h_counter, d_counter, sizeof(int), cudaMemcpyDeviceToHost);
   if (err != cudaSuccess) {
-    printf("marchParallel error: %s\n", cudaGetErrorString(err));
+    printf("cudaMemcpy error: %s\n", cudaGetErrorString(err));
+  } else {
+    printf("h_counter = %d\n", h_counter);
+  }
+
+  if (h_counter == 0) {
+    return;
   }
 
   /* get triangles from device and return */
@@ -91,18 +104,18 @@ void MarchingCubes::march(float *d_scalarField, float surfaceLevel) {
   size_t size;
   cudaGraphicsResourceGetMappedPointer((void **)&d_positions, &size,
                                        cudaVBOResource);
+  printCudaError("cudaGraphicsResourceGetMappedPointer in marching cubes");
+
+  cout << "cudavboresource size: " << size << endl;
 
   int totalElements = gridSize * gridSize * gridSize * 15;
   int numThreads = THREAD_SIZE_IN_COPY_VERTEX_DATA;
-  int numBlocks = (numBlocks + numThreads - 1) / numThreads;
+  int numBlocks = (h_counter + numThreads - 1) / numThreads;
 
-  g_copyVertexDataToVBO<<<blockSize, numThreads>>>(d_positions, d_vertexDataPtr,
-                                                   gridSize);
+  g_copyVertexDataToVBO<<<numBlocks, numThreads>>>(d_positions, d_vertexDataPtr,
+                                                   h_counter);
   cudaDeviceSynchronize();
-  err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    printf("copyVertexDataToVBODevice error: %s\n", cudaGetErrorString(err));
-  }
+  printCudaError("copyVertexDataToVBODevice");
 
   cudaGraphicsUnmapResources(1, &cudaVBOResource, 0);
 };

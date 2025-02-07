@@ -75,14 +75,14 @@ void Slime::render(double deltaTime) {
   // while (accumulator >= fixedTimeStep) {
   //   accumulator -= fixedTimeStep;
   // }
+
   sphSimulator->updateParticles(deltaTime);
 
   if (renderMode == "point") {
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
     // Render with points
     const int32_t pointCount = SPHSimulatorConstants::NUM_PARTICLES;
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
     /* Transform */
     shader->use();
