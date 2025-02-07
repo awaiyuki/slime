@@ -40,7 +40,8 @@ __device__ float3 gradientPoly6Device(float3 r, float h) {
   float rLen = length(r);
   if (rLen > h || rLen < EPSILON)
     return make_float3(0, 0, 0);
-  float base = 945.0f / (32.0f * PI * powf(h, 9.0f));
+  float h9 = powf(h, 9);
+  float base = 945.0f / (32.0f * PI * h9);
   float scalar = base * powf(h * h - rLen * rLen, 2);
   float3 grad = scalar * r;
   return -grad;
@@ -54,7 +55,7 @@ __device__ float laplacianPoly6Device(const float3 &r, float h) {
   if (rSquare > hSqaure)
     return 0.0f;
 
-  float h9 = h * h * h * h * h * h * h * h * h;
+  float h9 = powf(h, 9);
   float factor = 945.0f / (32.0f * PI * h9);
 
   float term = hSqaure - rSquare;
@@ -316,7 +317,7 @@ __global__ void slime::g_computeViscosityForce(Particle *d_particles,
       }
     }
   }
-  viscosityForce *= 0.16f;
+  viscosityForce *= VISCOSITY_COEFFICIENT;
   // slime::SPHSimulatorConstants::VISCOSITY_COEFFICIENT
 
   auto acceleration = viscosityForce / i.mass;
@@ -337,15 +338,11 @@ __global__ void slime::g_computeSurfaceTension(Particle *d_particles,
     return;
 
   Particle &pi = d_particles[idx];
-  // cS의 그라디언트: n = ∇c_S, 초기화
   float3 grad_cS = make_float3(0.0f, 0.0f, 0.0f);
-  // cS의 Laplacian 누적값: ∇²c_S
   float laplacian_cS = 0.0f;
 
-  // 현재 입자가 속한 셀 위치 계산
   int3 cellPos = toCellPosition(pi.position);
 
-  // 주변 3x3x3 셀에 대해 반복
   for (int nx = -1; nx <= 1; nx++) {
     for (int ny = -1; ny <= 1; ny++) {
       for (int nz = -1; nz <= 1; nz++) {
@@ -420,20 +417,27 @@ __global__ void slime::g_computeWallConstraint(Particle *d_particles,
 
   auto &i = d_particles[idx];
   const float COLLISION_DAMPING = 0.9f;
+  const float BOUNDARY_LIMIT = 1.00f;
+  const float BOUNDARY_LIMIT_RELAXED = 1.3f;
+
   const float3 offsetFromCenter = i.position - make_float3(0.0f, 0.0f, 0.0f);
 
-  if (fabsf(offsetFromCenter.x) > 1.01) {
-    i.position.x = (i.position.x > 0) - (i.position.x < 0);
+  if (fabsf(offsetFromCenter.x) > BOUNDARY_LIMIT_RELAXED) {
+    i.position.x = (i.position.x > 0) ? BOUNDARY_LIMIT : -BOUNDARY_LIMIT;
     i.velocity.x = -i.velocity.x * COLLISION_DAMPING;
   }
-  if (fabsf(offsetFromCenter.y) > 1.01) {
-    i.position.y = (i.position.y > 0) - (i.position.y < 0);
+  if (fabsf(offsetFromCenter.y) > BOUNDARY_LIMIT_RELAXED) {
+    i.position.y = (i.position.y > 0) ? BOUNDARY_LIMIT : -BOUNDARY_LIMIT;
     i.velocity.y = -i.velocity.y * COLLISION_DAMPING;
   }
-  if (fabsf(offsetFromCenter.z) > 1.01) {
-    i.position.z = (i.position.z > 0) - (i.position.z < 0);
+  if (fabsf(offsetFromCenter.z) > BOUNDARY_LIMIT_RELAXED) {
+    i.position.z = (i.position.z > 0) ? BOUNDARY_LIMIT : -BOUNDARY_LIMIT;
     i.velocity.z = -i.velocity.z * COLLISION_DAMPING;
   }
+
+  // Optional: Debug print to monitor particle position (remove after debugging)
+  // printf("Particle %d pos: (%f, %f, %f)\n", idx, i.position.x, i.position.y,
+  // i.position.z);
 }
 
 __global__ void slime::g_computePosition(Particle *d_particles,
