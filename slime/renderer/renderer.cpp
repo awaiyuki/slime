@@ -66,6 +66,8 @@ void Renderer::setup() {
 void Renderer::render() {
   deltaTime = 0.0f;
   float lastTime = 0.0f;
+  float accumulator = 0.0f;
+  const float fixedTimeStep = 1.0f / 60.0f; // Example fixed time step (60 FPS)
 
   while (!glfwWindowShouldClose(window)) {
     if (colorMode == COLOR_WHITE)
@@ -79,18 +81,31 @@ void Renderer::render() {
     deltaTime = currentTime - lastTime;
     lastTime = currentTime;
 
-    camera->handleMovement(deltaTime);
-    camera->updateView();
-    camera->updateProjection();
+    // Clamp deltaTime to avoid huge simulation steps
+    const float maxDeltaTime = 0.05f;
+    if (deltaTime > maxDeltaTime)
+      deltaTime = maxDeltaTime;
 
     /* Render all objects in WorldObject Pool */
-    for (auto itr = objectPool.begin(); itr != objectPool.end(); itr++) {
-      (*itr)->updateView(
-          camera->view); // Update view transform matrix of objects
-      (*itr)->updateProjection(
-          camera->projection); // Update projection transform matrix of objects
-      (*itr)->updateCameraPosition(camera->position);
-      (*itr)->render(deltaTime);
+    /* Fixed time update */
+    accumulator += deltaTime;
+    cout << "deltaTime: " << deltaTime << endl;
+    while (accumulator >= fixedTimeStep) {
+      cout << "render" << endl;
+      camera->handleMovement(fixedTimeStep);
+      camera->updateView();
+      camera->updateProjection();
+
+      for (auto itr = objectPool.begin(); itr != objectPool.end(); itr++) {
+        (*itr)->updateView(
+            camera->view); // Update view transform matrix of objects
+        (*itr)->updateProjection(
+            camera
+                ->projection); // Update projection transform matrix of objects
+        (*itr)->updateCameraPosition(camera->position);
+        (*itr)->render(fixedTimeStep); // Use fixedTimeStep instead of deltaTime
+      }
+      accumulator -= fixedTimeStep;
     }
 
     glfwSwapBuffers(window);

@@ -71,10 +71,6 @@ void Slime::render(double deltaTime) {
   //   cout << "render Slime" << endl;
 
   /* SPH Simulation */
-  // accumulator += deltaTime;
-  // while (accumulator >= fixedTimeStep) {
-  //   accumulator -= fixedTimeStep;
-  // }
 
   sphSimulator->updateParticles(deltaTime);
 
@@ -115,7 +111,7 @@ void Slime::render(double deltaTime) {
 
     /* Draw */
     glBindVertexArray(VAO);
-    glPointSize(15.0f);
+    glPointSize(5.0f);
     glDrawArrays(GL_POINTS, 0, pointCount);
   } else {
     // Render with triangles

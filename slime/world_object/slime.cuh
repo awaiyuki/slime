@@ -40,8 +40,6 @@ public:
 private:
   std::unique_ptr<SPHSimulator> sphSimulator;
   std::string renderMode;
-  const double fixedTimeStep = 0.016; // 고정된 시간 간격 (60 FPS 기준)
-  double accumulator = 0.0;
   double previousTime = glfwGetTime();
 };
 } // namespace slime

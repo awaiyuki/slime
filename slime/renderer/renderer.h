@@ -28,7 +28,6 @@ private:
 
   std::unique_ptr<Camera> camera;
   double deltaTime;
-
   enum Color { COLOR_BLACK, COLOR_WHITE };
 
   Color colorMode;
