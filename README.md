@@ -8,7 +8,7 @@ The core features have been implemented, but there are still plenty of bugs to w
 - SPH-based Fluid Simulation
 - Surface Extraction using Marching Cubes Algorithm
 - GPU Parallel Processing Using CUDA (CUDA-OpenGL Interop)
-- Spatial Hashing
+- Spatial Hashing for Neighbor Search (Best case: $`O(1)`$, Worst case: $`O(n)`$)
 
 ## Future Updates
 - Lighting
