@@ -3,7 +3,7 @@
 
 namespace slime::SPHSimulatorConstants {
 
-inline constexpr int NUM_PARTICLES = 50000;
+inline constexpr int NUM_PARTICLES = 5000000;
 inline constexpr int THREAD_SIZE_IN_UPDATE_PARTICLES = 512;
 inline constexpr int THREAD_SIZE_IN_UPDATE_SCALAR_FIELD = 8;
 inline constexpr int GRID_SIZE = 20;

@@ -225,150 +225,52 @@ __global__ void slime::g_computePressure(Particle *d_particles) {
   i.pressure = GAS_CONSTANT * (i.density - REST_DENSITY);
 }
 
-__global__ void slime::g_computePressureForce(Particle *d_particles,
-                                              unsigned int *hashIndices,
-                                              unsigned int *bucketStart,
-                                              unsigned int *bucketEnd,
-                                              double deltaTime) {
+__global__ void slime::g_computeForces(Particle *d_particles,
+                                       unsigned int *hashIndices,
+                                       unsigned int *bucketStart,
+                                       unsigned int *bucketEnd,
+                                       double deltaTime) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
   if (idx >= NUM_PARTICLES)
     return;
-  auto &i = d_particles[idx];
+  auto &pi = d_particles[idx];
 
   float3 pressureForce = make_float3(0.0f, 0.0f, 0.0f);
-
-  int3 cellPosition = toCellPosition(i.position);
-
-  /* Neighbour search using spatial hash */
-  for (int nx = -1; nx <= 1; nx++) {
-    for (int ny = -1; ny <= 1; ny++) {
-      for (int nz = -1; nz <= 1; nz++) {
-        unsigned int cellHash =
-            hash(toCellPosition(i.position + make_float3(nx, ny, nz)));
-        unsigned int key = keyFromHash(cellHash);
-        if (bucketEnd[key] - bucketStart[key] > MAX_NEIGHBORS) {
-          bucketEnd[key] = bucketStart[key] + MAX_NEIGHBORS;
-          if (bucketEnd[key] > NUM_PARTICLES)
-            bucketEnd[key] = NUM_PARTICLES - 1;
-        }
-        for (int bucketIdx = bucketStart[key]; bucketIdx < bucketEnd[key];
-             bucketIdx++) {
-          if (bucketIdx == -1)
-            break;
-          // TODO: implement
-          if (idx == hashIndices[bucketIdx])
-            continue;
-          auto &j = d_particles[hashIndices[bucketIdx]];
-          if (j.density < EPSILON)
-            continue;
-
-          auto r = i.position - j.position;
-          pressureForce += (-1) * normalize(r) * j.mass *
-                           (i.pressure + j.pressure) / (2.0f * j.density) *
-                           gradientSpikyKernelDevice(r, SMOOTHING_RADIUS);
-        }
-      }
-    }
-  }
-  auto acceleration = pressureForce / i.mass;
-  auto deltaVelocity = acceleration * float(deltaTime);
-  i.velocity += deltaVelocity;
-}
-
-__global__ void slime::g_computeViscosityForce(Particle *d_particles,
-                                               unsigned int *hashIndices,
-                                               unsigned int *bucketStart,
-                                               unsigned int *bucketEnd,
-                                               double deltaTime) {
-  int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= NUM_PARTICLES)
-    return;
-  auto &i = d_particles[idx];
   float3 viscosityForce = make_float3(0.0f, 0.0f, 0.0f);
-
-  /* Neighbour search using spatial hash */
-  for (int nx = -1; nx <= 1; nx++) {
-    for (int ny = -1; ny <= 1; ny++) {
-      for (int nz = -1; nz <= 1; nz++) {
-        unsigned int cellHash =
-            hash(toCellPosition(i.position + make_float3(nx, ny, nz)));
-        unsigned int key = keyFromHash(cellHash);
-        if (bucketEnd[key] - bucketStart[key] > MAX_NEIGHBORS) {
-          bucketEnd[key] = bucketStart[key] + MAX_NEIGHBORS;
-          if (bucketEnd[key] > NUM_PARTICLES)
-            bucketEnd[key] = NUM_PARTICLES - 1;
-        }
-        for (int bucketIdx = bucketStart[key]; bucketIdx < bucketEnd[key];
-             bucketIdx++) {
-          if (bucketIdx == -1)
-            break;
-          // TODO: implement
-          if (idx == hashIndices[bucketIdx])
-            continue;
-          auto &j = d_particles[hashIndices[bucketIdx]];
-
-          if (j.density < EPSILON)
-            continue;
-
-          auto r = i.position - j.position;
-          viscosityForce += j.mass * (j.velocity - i.velocity) / j.density *
-                            laplacianViscosityKernelDevice(r, SMOOTHING_RADIUS);
-        }
-      }
-    }
-  }
-  viscosityForce *= VISCOSITY_COEFFICIENT;
-  // slime::SPHSimulatorConstants::VISCOSITY_COEFFICIENT
-
-  auto acceleration = viscosityForce / i.mass;
-  auto deltaVelocity = acceleration * float(deltaTime);
-  i.velocity += deltaVelocity;
-}
-
-__global__ void slime::g_computeSurfaceTension(Particle *d_particles,
-                                               unsigned int *hashIndices,
-                                               unsigned int *bucketStart,
-                                               unsigned int *bucketEnd,
-                                               double deltaTime) {
-  int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= NUM_PARTICLES)
-    return;
-
-  Particle &pi = d_particles[idx];
   float3 grad_cS = make_float3(0.0f, 0.0f, 0.0f);
   float laplacian_cS = 0.0f;
 
-  int3 cellPos = toCellPosition(pi.position);
+  int3 cellPosition = toCellPosition(pi.position);
 
+  /* Neighbour search using spatial hash */
   for (int nx = -1; nx <= 1; nx++) {
     for (int ny = -1; ny <= 1; ny++) {
       for (int nz = -1; nz <= 1; nz++) {
         unsigned int cellHash =
             hash(toCellPosition(pi.position + make_float3(nx, ny, nz)));
         unsigned int key = keyFromHash(cellHash);
-
-        // clamping the number of neighbours
         if (bucketEnd[key] - bucketStart[key] > MAX_NEIGHBORS) {
           bucketEnd[key] = bucketStart[key] + MAX_NEIGHBORS;
           if (bucketEnd[key] > NUM_PARTICLES)
             bucketEnd[key] = NUM_PARTICLES - 1;
         }
-
         for (int bucketIdx = bucketStart[key]; bucketIdx < bucketEnd[key];
              bucketIdx++) {
           if (bucketIdx == -1)
             break;
-          unsigned int jIdx = hashIndices[bucketIdx];
-          if (idx == jIdx)
+          // TODO: implement
+          if (idx == hashIndices[bucketIdx])
+            continue;
+          auto &pj = d_particles[hashIndices[bucketIdx]];
+          if (pj.density < EPSILON)
             continue;
 
-          Particle &pj = d_particles[jIdx];
-
-          float3 r = pi.position - pj.position;
-          // float rLen = length(r);
-          // if (rLen > SMOOTHING_RADIUS || rLen < EPSILON)
-          //   continue;
-
+          auto r = pi.position - pj.position;
+          pressureForce += (-1) * normalize(r) * pj.mass *
+                           (pi.pressure + pj.pressure) / (2.0f * pj.density) *
+                           gradientSpikyKernelDevice(r, SMOOTHING_RADIUS);
+          viscosityForce += pj.mass * (pj.velocity - pi.velocity) / pj.density *
+                            laplacianViscosityKernelDevice(r, SMOOTHING_RADIUS);
           float3 gradW = gradientPoly6Device(r, SMOOTHING_RADIUS);
           grad_cS += (pj.mass / pj.density) * gradW;
 
@@ -378,8 +280,12 @@ __global__ void slime::g_computeSurfaceTension(Particle *d_particles,
       }
     }
   }
+  viscosityForce *= VISCOSITY_COEFFICIENT;
 
   float normGrad = length(grad_cS);
+
+  float3 acceleration = make_float3(0.0f, GRAVITATIONAL_ACCELERATION, 0.0f);
+  acceleration += (pressureForce + viscosityForce) / pi.mass;
 
   if (normGrad > SURFACE_NORMAL_THRESHOLD) {
     float curvature = -laplacian_cS / normGrad;
@@ -387,20 +293,11 @@ __global__ void slime::g_computeSurfaceTension(Particle *d_particles,
     float3 surfaceTensionForce =
         SURFACE_TENSION_COEFFICIENT * curvature * grad_cS;
 
-    float3 accleration = surfaceTensionForce / pi.mass;
-    pi.velocity += accleration * static_cast<float>(deltaTime);
+    acceleration += surfaceTensionForce / pi.mass;
   }
-}
 
-__global__ void slime::g_computeGravity(Particle *d_particles,
-                                        double deltaTime) {
-  int idx = threadIdx.x + blockDim.x * blockIdx.x;
-  if (idx >= NUM_PARTICLES)
-    return;
-  auto &i = d_particles[idx];
-  auto acceleration = make_float3(0, GRAVITATIONAL_ACCELERATION, 0);
-  auto deltaVelocity = acceleration * float(deltaTime);
-  i.velocity += deltaVelocity;
+  auto deltaVelocity = acceleration * static_cast<float>(deltaTime);
+  pi.velocity += deltaVelocity;
 }
 
 __global__ void slime::g_computeWallConstraint(Particle *d_particles,

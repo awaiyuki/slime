@@ -119,24 +119,11 @@ void SPHSimulator::updateParticles(double deltaTime) {
 
   g_computePressure<<<blockSize, threadSize>>>(d_particles);
 
-  g_computePressureForce<<<blockSize, threadSize>>>(
+  g_computeForces<<<blockSize, threadSize>>>(
       d_particles, raw_hashIndices, raw_bucketStart, raw_bucketEnd, deltaTime);
   cudaDeviceSynchronize();
 
   printCudaError("computePressureForce");
-  g_computeViscosityForce<<<blockSize, threadSize>>>(
-      d_particles, raw_hashIndices, raw_bucketStart, raw_bucketEnd, deltaTime);
-  cudaDeviceSynchronize();
-  printCudaError("computeViscosityForce");
-
-  g_computeSurfaceTension<<<blockSize, threadSize>>>(
-      d_particles, raw_hashIndices, raw_bucketStart, raw_bucketEnd, deltaTime);
-  cudaDeviceSynchronize();
-  printCudaError("computeSurfaceTensionForce");
-
-  g_computeGravity<<<blockSize, threadSize>>>(d_particles, deltaTime);
-  cudaDeviceSynchronize();
-
   g_computePosition<<<blockSize, threadSize>>>(d_particles, deltaTime);
   cudaDeviceSynchronize();
 
