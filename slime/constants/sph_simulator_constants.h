@@ -3,12 +3,12 @@
 
 namespace slime::SPHSimulatorConstants {
 
-inline constexpr int NUM_PARTICLES = 5000000;
+inline constexpr int NUM_PARTICLES = 1000000;
 inline constexpr int THREAD_SIZE_IN_UPDATE_PARTICLES = 512;
 inline constexpr int THREAD_SIZE_IN_UPDATE_SCALAR_FIELD = 8;
 inline constexpr int GRID_SIZE = 20;
 
-inline __device__ constexpr int MAX_NEIGHBORS = 100;
+inline __device__ constexpr int MAX_NEIGHBORS = 32;
 inline __device__ constexpr float PARTICLE_MASS = 1.0f;
 inline __device__ constexpr float REST_DENSITY = 1.0f;
 inline __device__ constexpr float GAS_CONSTANT = 1e-5f;

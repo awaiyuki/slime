@@ -3,7 +3,7 @@
 #include <math.h>
 #include <slime/utility/cuda_math.cuh>
 #define PI 3.141592653589793238462643
-#define EPSILON 0.000001
+#define EPSILON 1e-5
 using namespace slime;
 using namespace slime::SPHSimulatorConstants;
 
@@ -266,6 +266,11 @@ __global__ void slime::g_computeForces(Particle *d_particles,
             continue;
 
           auto r = pi.position - pj.position;
+
+          float rMagnitude = length(r);
+          if (rMagnitude < EPSILON)
+            continue;
+
           pressureForce += (-1) * normalize(r) * pj.mass *
                            (pi.pressure + pj.pressure) / (2.0f * pj.density) *
                            gradientSpikyKernelDevice(r, SMOOTHING_RADIUS);
