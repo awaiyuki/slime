@@ -2,7 +2,7 @@
 3D SPH-based Fluid Simulation using CUDA and OpenGL
 
 ## Current Status
-The core features have been implemented, but there are still plenty of bugs to work through. On now, focusing on fine-tuning SPH simulation accuracy (by adjusting constants) and boosting rendering performance.
+The core features have been implemented, but there are still plenty of bugs to work through. On now, The project is in fine-tuning the accuracy of SPH simulation (by adjusting constants) and boosting rendering performance.
 
 ## Features
 - SPH-based Fluid Simulation
