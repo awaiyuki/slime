@@ -16,6 +16,7 @@ public:
   Plane(float initX, float initY, float initZ, int planeSize);
   ~Plane();
   void setup();
+  void updateSimulation(double deltaTime);
   void render(double deltaTime);
   void clear();
   void updateView(glm::mat4 _view);

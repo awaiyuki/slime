@@ -13,6 +13,7 @@ public:
   ~SlimePortable();
 
   void setup() override;
+  void updateSimulation(double deltaTime) override;
   void render(double deltaTime) override;
   void clear() override;
   void updateView(glm::mat4 view) override;

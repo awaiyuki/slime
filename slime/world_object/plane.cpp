@@ -99,6 +99,8 @@ void Plane::setup() {
   glBindVertexArray(0);
 }
 
+void Plane::updateSimulation(double deltaTime) {}
+
 void Plane::render(double deltaTime) {
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   // cout << "render Plane" << endl;

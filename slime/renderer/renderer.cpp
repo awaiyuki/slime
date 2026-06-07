@@ -68,6 +68,7 @@ void Renderer::render() {
   float lastTime = glfwGetTime();
   float accumulator = 0.0f;
   const float fixedTimeStep = 1.0f / 60.0f;
+  const int maxSimulationStepsPerFrame = 4;
 
   while (!glfwWindowShouldClose(window)) {
     if (colorMode == COLOR_WHITE)
@@ -87,8 +88,15 @@ void Renderer::render() {
       deltaTime = maxDeltaTime;
 
     accumulator += deltaTime;
-    const bool shouldUpdateSimulation = accumulator >= fixedTimeStep;
-    if (shouldUpdateSimulation)
+    int simulationSteps = 0;
+    while (accumulator >= fixedTimeStep &&
+           simulationSteps < maxSimulationStepsPerFrame) {
+      for (auto itr = objectPool.begin(); itr != objectPool.end(); itr++)
+        (*itr)->updateSimulation(fixedTimeStep);
+      accumulator -= fixedTimeStep;
+      simulationSteps++;
+    }
+    if (simulationSteps == maxSimulationStepsPerFrame)
       accumulator = fmod(accumulator, fixedTimeStep);
 
     camera->handleMovement(deltaTime);
@@ -99,7 +107,7 @@ void Renderer::render() {
       (*itr)->updateView(camera->view);
       (*itr)->updateProjection(camera->projection);
       (*itr)->updateCameraPosition(camera->position);
-      (*itr)->render(shouldUpdateSimulation ? fixedTimeStep : 0.0f);
+      (*itr)->render(0.0f);
     }
 
     glfwSwapBuffers(window);

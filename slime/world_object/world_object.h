@@ -12,6 +12,7 @@ public:
   WorldObject();
   ~WorldObject();
   virtual void setup() = 0;
+  virtual void updateSimulation(double deltaTime) = 0;
   virtual void render(double deltaTime) = 0;
   virtual void clear() = 0;
   virtual void updateView(glm::mat4 _view) = 0;

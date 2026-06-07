@@ -68,3 +68,10 @@ cmake --build build --config Release
 
 - The Metal and CUDA SPH kernels currently use an all-pairs neighbor search.
 - Marching Cubes extraction currently runs on the CPU.
+
+## Timing
+
+- Rendering uses VSync and follows the display refresh rate.
+- Fluid simulation uses a fixed `60 Hz` time step.
+- The simulation can process up to four catch-up steps per rendered frame.
+- The Marching Cubes surface is rebuilt every three simulation steps (`20 Hz`).

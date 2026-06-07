@@ -39,26 +39,26 @@ void SlimePortable::setup() {
   glEnableVertexAttribArray(1);
 }
 
-void SlimePortable::render(double deltaTime) {
-  if (deltaTime > 0.0) {
-    simulator_.update(static_cast<float>(deltaTime));
-    if (++surfaceUpdateCounter_ >= 3 || vertexCount_ == 0) {
-      surfaceUpdateCounter_ = 0;
-      surface_.rebuild(simulator_.positions());
-      const auto &vertices = surface_.vertices();
-      vertexCount_ = vertices.size();
-      static bool loggedSurfaceSize = false;
-      if (!loggedSurfaceSize && vertexCount_ > 0) {
-        std::cout << "Marching Cubes surface: " << vertexCount_
-                  << " vertices" << std::endl;
-        loggedSurfaceSize = true;
-      }
-      glBindBuffer(GL_ARRAY_BUFFER, VBO);
-      glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(SurfaceVertex),
-                   vertices.data(), GL_DYNAMIC_DRAW);
+void SlimePortable::updateSimulation(double deltaTime) {
+  simulator_.update(static_cast<float>(deltaTime));
+  if (++surfaceUpdateCounter_ >= 3 || vertexCount_ == 0) {
+    surfaceUpdateCounter_ = 0;
+    surface_.rebuild(simulator_.positions());
+    const auto &vertices = surface_.vertices();
+    vertexCount_ = vertices.size();
+    static bool loggedSurfaceSize = false;
+    if (!loggedSurfaceSize && vertexCount_ > 0) {
+      std::cout << "Marching Cubes surface: " << vertexCount_ << " vertices"
+                << std::endl;
+      loggedSurfaceSize = true;
     }
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(SurfaceVertex),
+                 vertices.data(), GL_DYNAMIC_DRAW);
   }
+}
 
+void SlimePortable::render(double deltaTime) {
   shader->use();
   const glm::mat4 model =
       glm::translate(glm::mat4(1.0f), glm::vec3(initX, initY, initZ));
