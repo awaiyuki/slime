@@ -6,14 +6,15 @@ Real-time 3D SPH fluid simulation with a smooth Marching Cubes surface.
 
 - SPH fluid simulation with fixed time steps
 - Apple Metal compute backend on macOS
-- Portable CPU fallback on Windows and Linux
+- NVIDIA CUDA compute backend on Windows and Linux
 - Smooth `64 x 64 x 64` Marching Cubes surface
 - Continuous density field smoothing and opaque depth rendering
 - OpenGL rendering with GLFW
 
-The macOS build runs the particle simulation on Metal and extracts the
-Marching Cubes surface on the CPU. The original CUDA implementation remains in
-the repository but is not part of the default portable build.
+The macOS build runs the particle simulation on Metal. Other platforms run the
+same simulation logic on CUDA. Both backends use the same particle count,
+physical constants, integration rules, CPU Marching Cubes extraction, shaders,
+and rendering path.
 
 ## Requirements
 
@@ -21,11 +22,12 @@ the repository but is not part of the default portable build.
 - A C++17 compiler
 - Git submodules initialized
 - macOS: Xcode command-line tools and a Metal-capable Mac
+- Windows and Linux: NVIDIA GPU and CUDA Toolkit
 
 ## Clone
 
 ```bash
-git clone --recursive https://github.com/harutea/slime.git
+git clone --recursive https://github.com/awaiyuki/slime.git
 cd slime
 ```
 
@@ -64,6 +66,5 @@ cmake --build build --config Release
 
 ## Current Limitations
 
-- The Metal SPH kernel currently uses an all-pairs neighbor search.
+- The Metal and CUDA SPH kernels currently use an all-pairs neighbor search.
 - Marching Cubes extraction currently runs on the CPU.
-- The portable CPU backend uses fewer particles than the original CUDA path.

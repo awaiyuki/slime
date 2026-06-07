@@ -1,4 +1,5 @@
 #include "portable_sph_simulator.h"
+#include "portable_simulation_constants.h"
 
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
@@ -11,11 +12,7 @@
 
 namespace {
 
-constexpr std::uint32_t kParticlesPerAxis = 16;
-constexpr std::uint32_t kParticleCount =
-    kParticlesPerAxis * kParticlesPerAxis * kParticlesPerAxis;
-constexpr float kInitialWidth = 0.64f;
-constexpr float kSpacing = kInitialWidth / kParticlesPerAxis;
+using namespace slime::PortableSimulationConstants;
 
 struct MetalParticle {
   simd_float4 position;
@@ -38,6 +35,7 @@ struct SimulationParameters {
   float maxSpeed;
   float boundary;
   float collisionDamping;
+  float velocityDamping;
 };
 
 NSString *shaderSource() {
@@ -69,6 +67,7 @@ struct Parameters {
   float maxSpeed;
   float boundary;
   float collisionDamping;
+  float velocityDamping;
 };
 
 float poly6(float distanceSquared, float h) {
@@ -160,7 +159,7 @@ kernel void computeForcesAndIntegrate(
 
   float3 velocity =
       limitMagnitude((particle.velocity.xyz + acceleration * params.deltaTime) *
-                         0.999f,
+                         params.velocityDamping,
                      params.maxSpeed);
   float3 position = particle.position.xyz + velocity * params.deltaTime;
 
@@ -197,7 +196,7 @@ struct PortableSPHSimulator::MetalState {
 };
 
 PortableSPHSimulator::PortableSPHSimulator()
-    : positions_(kParticleCount), metal_(std::make_unique<MetalState>()) {
+    : positions_(particleCount), metal_(std::make_unique<MetalState>()) {
   metal_->device = MTLCreateSystemDefaultDevice();
   if (!metal_->device)
     throw std::runtime_error("Metal is unavailable on this Mac");
@@ -220,7 +219,7 @@ PortableSPHSimulator::PortableSPHSimulator()
     throw std::runtime_error([[error localizedDescription] UTF8String]);
 
   metal_->commandQueue = [metal_->device newCommandQueue];
-  const NSUInteger bufferSize = sizeof(MetalParticle) * kParticleCount;
+  const NSUInteger bufferSize = sizeof(MetalParticle) * particleCount;
   metal_->buffers[0] =
       [metal_->device newBufferWithLength:bufferSize
                                   options:MTLResourceStorageModeShared];
@@ -229,16 +228,16 @@ PortableSPHSimulator::PortableSPHSimulator()
                                   options:MTLResourceStorageModeShared];
 
   auto *particles = static_cast<MetalParticle *>([metal_->buffers[0] contents]);
-  const simd_float3 minimum = {-kInitialWidth * 0.5f, -0.35f,
-                               -kInitialWidth * 0.5f};
-  for (std::uint32_t i = 0; i < kParticleCount; ++i) {
-    const std::uint32_t x = i % kParticlesPerAxis;
-    const std::uint32_t y = (i / kParticlesPerAxis) % kParticlesPerAxis;
-    const std::uint32_t z = i / (kParticlesPerAxis * kParticlesPerAxis);
+  const simd_float3 minimum = {-initialWidth * 0.5f, -0.35f,
+                               -initialWidth * 0.5f};
+  for (std::uint32_t i = 0; i < particleCount; ++i) {
+    const std::uint32_t x = i % particlesPerAxis;
+    const std::uint32_t y = (i / particlesPerAxis) % particlesPerAxis;
+    const std::uint32_t z = i / (particlesPerAxis * particlesPerAxis);
     const simd_float3 position =
-        minimum + simd_make_float3((x + 0.5f) * kSpacing,
-                                   (y + 0.5f) * kSpacing,
-                                   (z + 0.5f) * kSpacing);
+        minimum + simd_make_float3((x + 0.5f) * spacing,
+                                   (y + 0.5f) * spacing,
+                                   (z + 0.5f) * spacing);
     particles[i] = {simd_make_float4(position, 1.0f),
                     simd_make_float4(0.0f), 1.0f, 0.0f, simd_make_float2(0.0f)};
     positions_[i] = glm::vec3(position.x, position.y, position.z);
@@ -246,7 +245,7 @@ PortableSPHSimulator::PortableSPHSimulator()
   std::memcpy([metal_->buffers[1] contents], particles, bufferSize);
 
   std::cout << "Metal SPH backend: "
-            << [[metal_->device name] UTF8String] << ", " << kParticleCount
+            << [[metal_->device name] UTF8String] << ", " << particleCount
             << " particles" << std::endl;
 }
 
@@ -254,9 +253,9 @@ PortableSPHSimulator::~PortableSPHSimulator() = default;
 
 void PortableSPHSimulator::update(float deltaTime) {
   SimulationParameters params{
-      kParticleCount, std::min(deltaTime, 1.0f / 60.0f), 0.1f,
-      kInitialWidth * kInitialWidth * kInitialWidth / kParticleCount,
-      1.0f, 45.0f, 0.12f, -3.0f, 35.0f, 2.5f, 0.96f, 0.25f};
+      particleCount, std::min(deltaTime, maxTimeStep), smoothingRadius, mass,
+      restDensity, pressureStiffness, viscosity, gravity, maxAcceleration,
+      maxSpeed, boundary, collisionDamping, velocityDamping};
 
   id<MTLCommandBuffer> commandBuffer = [metal_->commandQueue commandBuffer];
   id<MTLComputeCommandEncoder> encoder = [commandBuffer computeCommandEncoder];
@@ -264,7 +263,7 @@ void PortableSPHSimulator::update(float deltaTime) {
       MTLSizeMake(std::min<NSUInteger>(256, metal_->densityPipeline
                                                .maxTotalThreadsPerThreadgroup),
                   1, 1);
-  const MTLSize threads = MTLSizeMake(kParticleCount, 1, 1);
+  const MTLSize threads = MTLSizeMake(particleCount, 1, 1);
 
   [encoder setComputePipelineState:metal_->densityPipeline];
   [encoder setBuffer:metal_->buffers[metal_->currentBuffer] offset:0 atIndex:0];
@@ -285,7 +284,7 @@ void PortableSPHSimulator::update(float deltaTime) {
   metal_->currentBuffer = 1 - metal_->currentBuffer;
   const auto *particles = static_cast<const MetalParticle *>(
       [metal_->buffers[metal_->currentBuffer] contents]);
-  for (std::uint32_t i = 0; i < kParticleCount; ++i)
+  for (std::uint32_t i = 0; i < particleCount; ++i)
     positions_[i] = glm::vec3(particles[i].position.x, particles[i].position.y,
                               particles[i].position.z);
 }

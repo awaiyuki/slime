@@ -20,6 +20,17 @@ if(APPLE)
       "-framework Metal"
       "-framework Foundation"
   )
+else()
+  enable_language(CUDA)
+  target_sources(${PROJECT_NAME} PRIVATE
+      ${CMAKE_SOURCE_DIR}/slime/simulation/portable_sph_simulator_cuda.cu
+  )
+  target_compile_definitions(${PROJECT_NAME} PRIVATE SLIME_USE_CUDA=1)
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+      CUDA_SEPARABLE_COMPILATION ON
+      CUDA_STANDARD 17
+      CUDA_STANDARD_REQUIRED ON
+  )
 endif()
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}
@@ -46,9 +57,14 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/external/glm)
 target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
 
 if(MSVC)
-  target_compile_options(${PROJECT_NAME} PRIVATE /W4)
+  target_compile_options(${PROJECT_NAME} PRIVATE
+      $<$<COMPILE_LANGUAGE:CXX>:/W4>
+  )
 else()
-  target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(${PROJECT_NAME} PRIVATE
+      $<$<COMPILE_LANGUAGE:CXX>:-Wall;-Wextra;-Wpedantic>
+      $<$<COMPILE_LANGUAGE:OBJCXX>:-Wall;-Wextra;-Wpedantic>
+  )
 endif()
 
 file(GLOB_RECURSE SHADER_FILES CONFIGURE_DEPENDS
