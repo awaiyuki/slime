@@ -4,7 +4,7 @@ Real-time 3D SPH fluid simulation with a smooth Marching Cubes surface.
 
 ## Features
 
-- Stable SPH fluid simulation with fixed time steps
+- SPH fluid simulation with fixed time steps
 - Apple Metal compute backend on macOS
 - Portable CPU fallback on Windows and Linux
 - Smooth `64 x 64 x 64` Marching Cubes surface
