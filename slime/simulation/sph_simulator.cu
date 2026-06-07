@@ -2,7 +2,8 @@
 #include "sph_simulator.cuh"
 #include "sph_simulator_parallel.cuh"
 #include <cstring>
-#include <random>
+#include <cmath>
+#include <climits>
 #include <iostream>
 #include <stdio.h>
 #include <glad/gl.h>
@@ -10,6 +11,7 @@
 #include <cuda_gl_interop.h>
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
+#include <thrust/fill.h>
 #include <thrust/sort.h>
 #include <slime/utility/cuda_debug.cuh>
 
@@ -25,19 +27,27 @@ SPHSimulator::SPHSimulator(const unsigned int vbo,
       bucketStart(SPHSimulatorConstants::NUM_PARTICLES, -1),
       bucketEnd(SPHSimulatorConstants::NUM_PARTICLES, -1) {
   cout << "in SPHSimulator: renderMode=" << renderMode << endl;
-  random_device rd;
-  mt19937 gen(rd());
-  uniform_real_distribution<> dis(-0.2f, 0.2f); // simulation space: [-1, 1]^3
   particles.reserve(SPHSimulatorConstants::NUM_PARTICLES);
+  const int particlesPerAxis =
+      static_cast<int>(ceil(cbrt(SPHSimulatorConstants::NUM_PARTICLES)));
+  const float spacing =
+      SPHSimulatorConstants::INITIAL_FLUID_WIDTH / particlesPerAxis;
+  const float initialMin = -0.5f * SPHSimulatorConstants::INITIAL_FLUID_WIDTH;
+
   for (int i = 0; i < SPHSimulatorConstants::NUM_PARTICLES; i++) {
     Particle particle;
     particle.id = i;
 
-    float x = static_cast<float>(dis(gen));
-    float y = static_cast<float>(dis(gen));
-    float z = static_cast<float>(dis(gen));
+    const int ix = i % particlesPerAxis;
+    const int iy = (i / particlesPerAxis) % particlesPerAxis;
+    const int iz = i / (particlesPerAxis * particlesPerAxis);
+    const float x = initialMin + (ix + 0.5f) * spacing;
+    const float y = initialMin + (iy + 0.5f) * spacing;
+    const float z = initialMin + (iz + 0.5f) * spacing;
     particle.position = make_float3(x, y, z);
     particle.velocity = make_float3(0, 0, 0);
+    particle.density = SPHSimulatorConstants::REST_DENSITY;
+    particle.pressure = 0.0f;
 
     // cout << "initial position: " << x << y << z << endl;
     particle.mass = SPHSimulatorConstants::PARTICLE_MASS;
@@ -50,6 +60,8 @@ SPHSimulator::SPHSimulator(const unsigned int vbo,
 
   cudaMalloc((void **)&d_particles,
              sizeof(Particle) * SPHSimulatorConstants::NUM_PARTICLES);
+  cudaMalloc((void **)&d_nextVelocities,
+             sizeof(float3) * SPHSimulatorConstants::NUM_PARTICLES);
   cudaMalloc((void **)&d_scalarField,
              sizeof(float) * GRID_SIZE * GRID_SIZE * GRID_SIZE);
 
@@ -70,6 +82,7 @@ SPHSimulator::SPHSimulator(const unsigned int vbo,
 
 SPHSimulator::~SPHSimulator() {
   cudaFree(d_particles);
+  cudaFree(d_nextVelocities);
   cudaFree(d_scalarField);
 }
 
@@ -101,6 +114,8 @@ void SPHSimulator::updateParticles(double deltaTime) {
   raw_hashKeys = thrust::raw_pointer_cast(hashKeys.data());
   raw_hashIndices = thrust::raw_pointer_cast(hashIndices.data());
 
+  thrust::fill(bucketStart.begin(), bucketStart.end(), UINT_MAX);
+  thrust::fill(bucketEnd.begin(), bucketEnd.end(), UINT_MAX);
   g_updateHashBucket<<<blockSize, threadSize>>>(raw_hashKeys, raw_hashIndices,
                                                 raw_bucketStart, raw_bucketEnd);
   cudaDeviceSynchronize();
@@ -120,10 +135,12 @@ void SPHSimulator::updateParticles(double deltaTime) {
   g_computePressure<<<blockSize, threadSize>>>(d_particles);
 
   g_computeForces<<<blockSize, threadSize>>>(
-      d_particles, raw_hashIndices, raw_bucketStart, raw_bucketEnd, deltaTime);
+      d_particles, d_nextVelocities, raw_hashIndices, raw_bucketStart,
+      raw_bucketEnd, deltaTime);
   cudaDeviceSynchronize();
 
   printCudaError("computePressureForce");
+  g_applyVelocities<<<blockSize, threadSize>>>(d_particles, d_nextVelocities);
   g_computePosition<<<blockSize, threadSize>>>(d_particles, deltaTime);
   cudaDeviceSynchronize();
 

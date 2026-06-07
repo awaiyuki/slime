@@ -26,6 +26,8 @@ void main()
 
     // diffuse
     vec3 norm = normalize(Normal);
+    if (!gl_FrontFacing)
+        norm = -norm;
     vec3 lightDir = normalize(lightPos - FragPos);  
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = (diff * material.diffuse) * lightColor;
@@ -37,6 +39,6 @@ void main()
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
     vec3 specular = (spec * material.specular) * lightColor;  
 
-    vec3 result = ambient + diffuse + specular;
-    FragColor = vec4(0.2, 0.4, 0.9, 1.0);
+    vec3 result = objectColor * (ambient + diffuse + vec3(0.18)) + specular;
+    FragColor = vec4(result, 1.0);
 }

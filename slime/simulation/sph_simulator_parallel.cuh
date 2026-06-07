@@ -19,10 +19,14 @@ extern __global__ void g_computeDensity(Particle *d_particles,
 extern __global__ void g_computePressure(Particle *d_particles);
 
 extern __global__ void g_computeForces(Particle *d_particles,
+                                       float3 *nextVelocities,
                                        unsigned int *hashIndices,
                                        unsigned int *bucketStart,
                                        unsigned int *bucketEnd,
                                        double deltaTime);
+
+extern __global__ void g_applyVelocities(Particle *d_particles,
+                                         float3 *nextVelocities);
 
 extern __global__ void g_computeWallConstraint(Particle *d_particles,
                                                double deltaTime);

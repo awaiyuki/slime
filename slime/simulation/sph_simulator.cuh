@@ -50,6 +50,7 @@ private:
   unsigned int *raw_bucketEnd;
 
   Particle *d_particles;
+  float3 *d_nextVelocities;
   cudaGraphicsResource_t cudaVBOResource;
 
   float *d_scalarField;
